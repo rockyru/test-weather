@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Disaster Alerts PH",
+  "name": "Disaster Alert Aggregator PH",
   "icons": [
     {
       "src": "favicon.ico",
