@@ -1,46 +1,136 @@
-# Getting Started with Create React App
+# Disaster Alert Aggregator PH
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A real-time disaster alert aggregator for the Philippines, collecting information from official government sources including PAGASA and PHIVOLCS.
 
-## Available Scripts
+![Disaster Alert Aggregator PH](./public/image.png)
 
-In the project directory, you can run:
+## 📋 Project Overview
 
-### `npm start`
+This application aggregates and displays real-time disaster alerts in the Philippines by:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+1. Scraping official government sources (PAGASA, PHIVOLCS)
+2. Storing alerts in a Supabase database
+3. Displaying them through a React + TypeScript frontend with real-time updates
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### Key Features
 
-### `npm test`
+- **Real-time Updates**: Displays alerts as they are published using Supabase Realtime
+- **Filtering**: Filter alerts by category (typhoon, earthquake, flood, volcano) and region
+- **Mobile-First Design**: Responsive interface built with Tailwind CSS
+- **Automated Scraping**: Scheduled scraper runs every 15 minutes via GitHub Actions
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠️ Tech Stack
 
-### `npm run build`
+- **Frontend**: React, TypeScript, Tailwind CSS
+- **Backend DB**: Supabase (PostgreSQL, Realtime, Auth, Storage)
+- **Web Scraper**: Node.js with Cheerio
+- **Deployment**: Vercel (Frontend), Supabase (Backend), GitHub Actions (Scraper Scheduler)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🚀 Getting Started
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Prerequisites
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- Node.js (v16+)
+- npm or yarn
+- Supabase account
 
-### `npm run eject`
+### Setup
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+1. **Clone the repository**
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+git clone https://github.com/KCprsnlcc/disaster-alert-aggregator-ph.git
+cd disaster-alert-aggregator-ph
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+2. **Install dependencies**
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+```bash
+npm install
+```
 
-## Learn More
+3. **Set up Supabase**
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+   - Create a new Supabase project
+   - Run the SQL in `db/schema.sql` in the Supabase SQL editor
+   - Get your Supabase URL and anon key from the API settings
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+4. **Configure environment variables**
+
+   Create a `.env` file in the root directory with:
+
+```
+REACT_APP_SUPABASE_URL=your_supabase_url
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+5. **Start the development server**
+
+```bash
+npm start
+```
+
+## 🤖 Running the Scraper
+
+The scraper fetches data from PAGASA and PHIVOLCS websites and stores it in your Supabase database.
+
+### Local Testing
+
+```bash
+cd scraper
+npm install
+node index.js
+```
+
+### Deployment
+
+The scraper is designed to run in GitHub Actions using the workflow in `.github/workflows/scraper-schedule.yml`.
+
+You'll need to add your Supabase credentials as GitHub Secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+## 📱 Frontend Structure
+
+- `src/components/Dashboard.tsx`: Main component that fetches and displays alerts
+- `src/components/AlertCard.tsx`: Card component for individual alerts
+- `src/components/FilterBar.tsx`: Filtering UI for category and region
+- `src/supabase.ts`: Supabase client and TypeScript types
+
+## 🧪 Testing
+
+```bash
+npm test
+```
+
+## 📦 Building for Production
+
+```bash
+npm run build
+```
+
+The build output will be in the `build` directory.
+
+## 📤 Deployment
+
+### Frontend (Vercel)
+
+1. Connect your GitHub repository to Vercel
+2. Set the environment variables in the Vercel project settings
+3. Deploy from the main branch
+
+### Scraper (GitHub Actions)
+
+The scraper will run automatically every 15 minutes once you've set up the GitHub Secrets.
+
+## 📎 Notes
+
+- All timestamps are in Philippine Standard Time (UTC+8)
+- No login is required to view alerts (anonymous public access)
+- Data is sourced from official government websites, but this is not an official service
+
+## 🙏 Acknowledgements
+
+- [PAGASA](https://www.pagasa.dost.gov.ph/) - Philippine Atmospheric, Geophysical and Astronomical Services Administration
+- [PHIVOLCS](https://www.phivolcs.dost.gov.ph/) - Philippine Institute of Volcanology and Seismology
