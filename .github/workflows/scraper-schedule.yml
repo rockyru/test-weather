@@ -1,5 +1,8 @@
 name: Scheduled Disaster Alert Scraper
 
+permissions:
+  contents: read
+
 on:
   schedule:
     # Run every 15 minutes
