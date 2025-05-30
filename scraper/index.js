@@ -939,6 +939,17 @@ async function initializeScraperAndScheduler() {
 }
 
 // Start the scraper
-initializeScraperAndScheduler().catch(error => {
-  console.error('Error initializing scraper:', error);
-});
+// Only run initialization if called directly, not when imported as a module
+if (require.main === module) {
+  initializeScraperAndScheduler().catch(error => {
+    console.error('Error initializing scraper:', error);
+  });
+}
+
+// Export functions for Vercel API routes
+module.exports = {
+  runScraper,
+  scrapePAGASA,
+  scrapePHIVOLCS,
+  storeAlerts
+};
