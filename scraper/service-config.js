@@ -6,8 +6,8 @@ module.exports = {
   supabaseUrl: process.env.REACT_APP_SUPABASE_URL || 'https://lgqfdbygspzkcrvybcwc.supabase.co',
   
   // For the scraper, use the service role key instead of anon key
-  // You'll need to replace this with your actual service role key from Supabase dashboard
-  supabaseServiceKey: 'YOUR_SERVICE_ROLE_KEY_HERE', // Replace with your actual service role key
+  // This will be provided through environment variables when running in GitHub Actions
+  supabaseKey: process.env.SUPABASE_KEY || 'YOUR_SERVICE_ROLE_KEY_HERE', // Will be replaced by the GitHub Actions secret
   
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
   sources: {

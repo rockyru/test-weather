@@ -3,7 +3,11 @@ const cheerio = require('cheerio');
 const { createClient } = require('@supabase/supabase-js');
 const cron = require('node-cron');
 const https = require('https');
-const config = require('./config');
+// Use service-config.js which contains the service role key that can bypass RLS policies
+const config = require('./service-config');
+
+// Log which configuration is being used
+console.log('Using service configuration with higher database privileges');
 
 // Create axios instance with SSL certificate verification disabled
 // This is needed for some government websites with problematic certificates
