@@ -504,11 +504,21 @@ async function storeAlerts(alerts) {
 
   console.log(`Processing ${alerts.length} alerts for storage...`);
   
+  // Filter out low risk alerts
+  const filteredAlerts = alerts.filter(alert => alert.severity !== 'low');
+  console.log(`Filtered out ${alerts.length - filteredAlerts.length} low risk alerts. Remaining alerts: ${filteredAlerts.length}`);
+  
+  // If no alerts remain after filtering, exit early
+  if (filteredAlerts.length === 0) {
+    console.log('No alerts to store after filtering out low risk alerts.');
+    return;
+  }
+  
   // Create a map to deduplicate alerts by title/source/date (strictly ignoring time)
   const uniqueAlertMap = new Map();
   
   // First pass - create unique keys based ONLY on title, source, and date (no time component)
-  for (const alert of alerts) {
+  for (const alert of filteredAlerts) {
     // Format date properly to avoid timezone issues
     if (alert.published_at instanceof Date) {
       // Keep original date object for sorting
@@ -527,7 +537,7 @@ async function storeAlerts(alerts) {
     const dateString = `${alertDate.getFullYear()}-${(alertDate.getMonth() + 1).toString().padStart(2, '0')}-${alertDate.getDate().toString().padStart(2, '0')}`;
     const uniqueKey = `${alert.title.trim()}|${alert.source}|${dateString}`;
     
-    console.log(`Generated unique key: ${uniqueKey}`);
+    console.log(`Generated unique key: ${uniqueKey} [Severity: ${alert.severity}]`);
     
     // Only keep the most recent alert for each unique key
     if (!uniqueAlertMap.has(uniqueKey) || 
@@ -577,7 +587,7 @@ async function storeAlerts(alerts) {
         if (insertError) {
           console.error('Error inserting alert:', insertError);
         } else {
-          console.log(`Alert stored: ${alert.title} for ${new Date(alert.published_at).toLocaleDateString()}`);
+          console.log(`Alert stored: ${alert.title} for ${new Date(alert.published_at).toLocaleDateString()} [Severity: ${alert.severity}]`);
           addedCount++;
         }
       } else {
@@ -589,7 +599,7 @@ async function storeAlerts(alerts) {
     }
   }
   
-  console.log(`Alerts storage summary: ${addedCount} new alerts added, ${skippedCount} duplicates skipped`);
+  console.log(`Alerts storage summary: ${addedCount} new alerts added, ${skippedCount} duplicates skipped (low risk alerts excluded)`);
 }
 
 // Function to get sample alerts when scraping is not possible
