@@ -160,6 +160,39 @@ body {
   background-color: #fff7ed;
 }
 
+.alert-card-rainfall {
+  border-left: 4px solid #8b5cf6;
+  background-color: #f5f3ff;
+}
+
+.alert-card-landslide {
+  border-left: 4px solid #a16207;
+  background-color: #fefce8;
+}
+
+.alert-card-weather {
+  border-left: 4px solid #6b7280;
+  background-color: #f3f4f6;
+}
+
+/* Severity indicator styles */
+.severity-high {
+  --severity-color: #ef4444;
+}
+
+.severity-medium {
+  --severity-color: #f97316;
+}
+
+.severity-low {
+  --severity-color: #10b981;
+}
+
+.alert-severity {
+  background-color: var(--severity-color, #6b7280);
+  color: white;
+}
+
 .alert-header {
   display: flex;
   justify-content: space-between;

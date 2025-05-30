@@ -13,6 +13,16 @@ const categories = [
   { value: 'earthquake', label: 'Earthquake' },
   { value: 'flood', label: 'Flood' },
   { value: 'volcano', label: 'Volcano' },
+  { value: 'rainfall', label: 'Rainfall' },
+  { value: 'landslide', label: 'Landslide' },
+  { value: 'weather', label: 'Weather' },
+];
+
+const severityLevels = [
+  { value: '', label: 'All Risk Levels' },
+  { value: 'high', label: 'High Risk' },
+  { value: 'medium', label: 'Medium Risk' },
+  { value: 'low', label: 'Low Risk' },
 ];
 
 const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions }) => {
@@ -22,6 +32,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions 
 
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFilterChange({ ...filters, region: e.target.value });
+  };
+  
+  const handleSeverityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange({ ...filters, severity: e.target.value });
   };
 
   return (
@@ -56,6 +70,21 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions 
               {regions.map((region) => (
                 <option key={region} value={region}>
                   {region}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <select
+              className="filter-select"
+              value={filters.severity || ''}
+              onChange={handleSeverityChange}
+              aria-label="Filter by risk level"
+            >
+              {severityLevels.map((level) => (
+                <option key={level.value} value={level.value}>
+                  {level.label}
                 </option>
               ))}
             </select>

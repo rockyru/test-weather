@@ -10,14 +10,16 @@ export type DisasterAlert = {
   source: string;
   title: string;
   description: string | null;
-  category: 'typhoon' | 'earthquake' | 'flood' | 'volcano';
+  category: 'typhoon' | 'earthquake' | 'flood' | 'volcano' | 'rainfall' | 'landslide' | 'weather';
   region: string | null;
   published_at: string;
   link: string | null;
+  severity: 'low' | 'medium' | 'high' | null;
   created_at: string;
 };
 
 export type DisasterAlertFilter = {
   category?: string;
   region?: string;
+  severity?: string;
 };

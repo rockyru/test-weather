@@ -79,6 +79,10 @@ const Dashboard: React.FC = () => {
       result = result.filter(alert => alert.region === filters.region);
     }
 
+    if (filters.severity) {
+      result = result.filter(alert => alert.severity === filters.severity);
+    }
+
     setFilteredAlerts(result);
   }, [alerts, filters]);
 

@@ -4,10 +4,11 @@ CREATE TABLE disaster_alerts (
   source TEXT NOT NULL,
   title TEXT NOT NULL,
   description TEXT,
-  category TEXT CHECK (category IN ('typhoon', 'earthquake', 'flood', 'volcano')),
+  category TEXT CHECK (category IN ('typhoon', 'earthquake', 'flood', 'volcano', 'rainfall', 'landslide', 'weather')),
   region TEXT,
   published_at TIMESTAMP,
   link TEXT,
+  severity TEXT CHECK (severity IN ('low', 'medium', 'high')),
   created_at TIMESTAMP DEFAULT now()
 );
 

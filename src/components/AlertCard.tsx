@@ -26,16 +26,37 @@ const getCategoryStyles = (category: string): { icon: string; cardClass: string 
       return { icon: '🌊', cardClass: 'alert-card-flood' };
     case 'volcano':
       return { icon: '🌋', cardClass: 'alert-card-volcano' };
+    case 'rainfall':
+      return { icon: '🌧️', cardClass: 'alert-card-rainfall' };
+    case 'landslide':
+      return { icon: '⛰️', cardClass: 'alert-card-landslide' };
+    case 'weather':
+      return { icon: '☁️', cardClass: 'alert-card-weather' };
     default:
       return { icon: '⚠️', cardClass: '' };
   }
 };
 
+// Function to get appropriate color class based on severity
+const getSeverityClass = (severity: string | null): string => {
+  switch (severity) {
+    case 'high':
+      return 'severity-high';
+    case 'medium':
+      return 'severity-medium';
+    case 'low':
+      return 'severity-low';
+    default:
+      return 'severity-low';
+  }
+};
+
 const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
   const { icon, cardClass } = getCategoryStyles(alert.category);
+  const severityClass = getSeverityClass(alert.severity);
   
   return (
-    <div className={`alert-card ${cardClass}`}>
+    <div className={`alert-card ${cardClass} ${severityClass}`}>
       <div className="alert-header">
         <div className="alert-title-group">
           <span className="alert-icon">{icon}</span>
@@ -57,6 +78,11 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
             {alert.region && (
               <span className="alert-tag">
                 {alert.region}
+              </span>
+            )}
+            {alert.severity && (
+              <span className={`alert-tag alert-severity ${getSeverityClass(alert.severity)}`}>
+                {alert.severity.toUpperCase()} RISK
               </span>
             )}
           </div>
