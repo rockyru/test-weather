@@ -10,7 +10,7 @@ module.exports = {
   supabaseKey: process.env.SUPABASE_KEY || 'YOUR_SERVICE_ROLE_KEY_HERE', // Will be replaced by the GitHub Actions secret
   
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
-  useSampleAlerts: true, // Use sample alerts instead of scraping
+  useSampleAlerts: false, // Actually scrape websites instead of using sample data
   sources: {
     pagasa: 'https://www.pagasa.dost.gov.ph/',
     phivolcs: 'https://www.phivolcs.dost.gov.ph/'
