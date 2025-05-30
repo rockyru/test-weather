@@ -3,6 +3,7 @@ import { supabase, DisasterAlert, DisasterAlertFilter } from '../supabase';
 import AlertCard from './AlertCard';
 import FilterBar from './FilterBar';
 import Pagination from './Pagination';
+import ScraperStatus from './ScraperStatus';
 
 const Dashboard: React.FC = () => {
   const [alerts, setAlerts] = useState<DisasterAlert[]>([]);
@@ -147,6 +148,8 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="container">
+      <ScraperStatus />
+      
       <FilterBar 
         filters={filters} 
         onFilterChange={handleFilterChange} 

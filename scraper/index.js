@@ -36,7 +36,7 @@ const supabase = createClient(config.supabaseUrl, config.supabaseKey);
 
 console.log(`Scraper initialized with Supabase URL: ${config.supabaseUrl}`);
 console.log(`Scraper will run every ${config.scrapingInterval / (60 * 1000)} minutes`);
-console.log('Enhanced scraper: Only capturing medium and high risk alerts, low-risk conditions are excluded');
+console.log('Enhanced scraper: Capturing all risk levels but excluding alerts with insufficient information');
 
 // Function to scrape PAGASA website
 async function scrapePAGASA() {
@@ -125,7 +125,7 @@ async function scrapePAGASA() {
       });
     });
     
-    // Extract regional forecasts for low-level weather conditions
+    // Extract regional forecasts for all weather conditions with sufficient information
     // Store forecast dates to avoid duplicates with different dates
     const forecastTitles = new Set();
     
@@ -135,8 +135,11 @@ async function scrapePAGASA() {
       const link = $(el).find('a').attr('href');
       const publishedAt = new Date();
       
-      // Skip if this is empty
-      if (!description) return;
+      // Skip if description is empty or has insufficient information
+      if (!description || description.length < 15) {
+        console.log(`Skipping forecast with insufficient information: ${title}`);
+        return;
+      }
       
       // Create a unique key for this forecast based on title and description
       const forecastKey = `${title}-${description.substring(0, 50)}`;
@@ -150,6 +153,9 @@ async function scrapePAGASA() {
       // Add to our set of seen forecasts
       forecastTitles.add(forecastKey);
       
+      // Determine proper severity - can be low, medium or high based on content
+      const severity = determineSeverity(title, description);
+      
       alerts.push({
         source: 'PAGASA',
         title,
@@ -158,7 +164,7 @@ async function scrapePAGASA() {
         region: extractRegionFromText(description) || 'Nationwide',
         published_at: publishedAt,
         link: link ? new URL(link, 'https://www.pagasa.dost.gov.ph/').href : null,
-        severity: 'medium' // Changed from low to medium as per requirement to remove low risk alerts
+        severity: severity
       });
     });
 
@@ -345,35 +351,89 @@ async function scrapePHIVOLCS() {
 
 // Helper function to extract region from text
 function extractRegionFromText(text) {
-  // This is a simple extraction and would need to be improved for production
+  if (!text) return 'Nationwide';
+  
+  // Comprehensive region patterns with official names, alternate names, and major provinces/cities
   const regionPatterns = [
-    { pattern: /Region\s+([IVX]+)/i, group: 1 },
-    { pattern: /Metro\s+Manila/i, replacement: 'Metro Manila' },
-    { pattern: /CALABARZON/i, replacement: 'CALABARZON' },
-    { pattern: /MIMAROPA/i, replacement: 'MIMAROPA' },
-    { pattern: /CAR/i, replacement: 'Cordillera Administrative Region' },
-    { pattern: /Ilocos/i, replacement: 'Ilocos Region' },
-    { pattern: /Cagayan/i, replacement: 'Cagayan Valley' },
-    { pattern: /Central\s+Luzon/i, replacement: 'Central Luzon' },
-    { pattern: /Bicol/i, replacement: 'Bicol Region' },
-    { pattern: /Western\s+Visayas/i, replacement: 'Western Visayas' },
-    { pattern: /Central\s+Visayas/i, replacement: 'Central Visayas' },
-    { pattern: /Eastern\s+Visayas/i, replacement: 'Eastern Visayas' },
-    { pattern: /Zamboanga/i, replacement: 'Zamboanga Peninsula' },
-    { pattern: /Northern\s+Mindanao/i, replacement: 'Northern Mindanao' },
-    { pattern: /Davao/i, replacement: 'Davao Region' },
-    { pattern: /SOCCSKSARGEN/i, replacement: 'SOCCSKSARGEN' },
-    { pattern: /CARAGA/i, replacement: 'CARAGA' },
-    { pattern: /BARMM/i, replacement: 'Bangsamoro' },
+    // NCR - National Capital Region
+    { pattern: /\b(?:NCR|Metro\s*Manila|National\s*Capital\s*Region|Manila|Quezon\s*City|Makati|Pasig|Taguig|Parañaque|Pasay|Caloocan|Marikina|Muntinlupa|Las\s*Piñas|Malabon|Mandaluyong|Navotas|Valenzuela|San\s*Juan|Pateros)\b/i, replacement: 'Metro Manila' },
+    
+    // CAR - Cordillera Administrative Region
+    { pattern: /\b(?:CAR|Cordillera|Baguio|Abra|Apayao|Benguet|Ifugao|Kalinga|Mountain\s*Province)\b/i, replacement: 'Cordillera Administrative Region' },
+    
+    // Region I - Ilocos Region
+    { pattern: /\b(?:Region\s*[I1]|Ilocos|Ilocos\s*Norte|Ilocos\s*Sur|La\s*Union|Pangasinan|Vigan|Laoag|San\s*Fernando,\s*La\s*Union)\b/i, replacement: 'Ilocos Region' },
+    
+    // Region II - Cagayan Valley
+    { pattern: /\b(?:Region\s*[II2]|Cagayan\s*Valley|Cagayan(?!\s+de\s+Oro)|Isabela|Nueva\s*Vizcaya|Quirino|Batanes|Tuguegarao)\b/i, replacement: 'Cagayan Valley' },
+    
+    // Region III - Central Luzon
+    { pattern: /\b(?:Region\s*[III3]|Central\s*Luzon|Aurora|Bataan|Bulacan|Nueva\s*Ecija|Pampanga|Tarlac|Zambales|Angeles|Olongapo|San\s*Fernando,\s*Pampanga)\b/i, replacement: 'Central Luzon' },
+    
+    // Region IV-A - CALABARZON
+    { pattern: /\b(?:Region\s*IV-?A|Region\s*4-?A|CALABARZON|Cavite|Laguna|Batangas|Rizal|Quezon(?!\s+City)|Lucena|Antipolo|Calamba|Batangas\s*City|Tagaytay)\b/i, replacement: 'CALABARZON' },
+    
+    // Region IV-B - MIMAROPA
+    { pattern: /\b(?:Region\s*IV-?B|Region\s*4-?B|MIMAROPA|Occidental\s*Mindoro|Oriental\s*Mindoro|Marinduque|Romblon|Palawan|Puerto\s*Princesa|Calapan)\b/i, replacement: 'MIMAROPA' },
+    
+    // Region V - Bicol Region
+    { pattern: /\b(?:Region\s*[V5]|Bicol|Albay|Camarines\s*Norte|Camarines\s*Sur|Catanduanes|Masbate|Sorsogon|Legazpi|Naga)\b/i, replacement: 'Bicol Region' },
+    
+    // Region VI - Western Visayas
+    { pattern: /\b(?:Region\s*[VI6]|Western\s*Visayas|Aklan|Antique|Capiz|Guimaras|Iloilo|Negros\s*Occidental|Bacolod|Iloilo\s*City|Roxas)\b/i, replacement: 'Western Visayas' },
+    
+    // Region VII - Central Visayas
+    { pattern: /\b(?:Region\s*[VII7]|Central\s*Visayas|Bohol|Cebu|Negros\s*Oriental|Siquijor|Cebu\s*City|Lapu-Lapu|Mandaue|Tagbilaran|Dumaguete)\b/i, replacement: 'Central Visayas' },
+    
+    // Region VIII - Eastern Visayas
+    { pattern: /\b(?:Region\s*[VIII8]|Eastern\s*Visayas|Biliran|Eastern\s*Samar|Leyte|Northern\s*Samar|Samar|Southern\s*Leyte|Tacloban|Ormoc|Calbayog|Catbalogan)\b/i, replacement: 'Eastern Visayas' },
+    
+    // Region IX - Zamboanga Peninsula
+    { pattern: /\b(?:Region\s*[IX9]|Zamboanga(?!\s+del\s+Sur|\s+del\s+Norte|\s+Sibugay)\s*Peninsula|Zamboanga\s*del\s*Norte|Zamboanga\s*del\s*Sur|Zamboanga\s*Sibugay|Isabela\s*City|Zamboanga\s*City|Dapitan|Dipolog|Pagadian)\b/i, replacement: 'Zamboanga Peninsula' },
+    
+    // Region X - Northern Mindanao
+    { pattern: /\b(?:Region\s*[X10]|Northern\s*Mindanao|Bukidnon|Camiguin|Lanao\s*del\s*Norte|Misamis\s*Occidental|Misamis\s*Oriental|Cagayan\s*de\s*Oro|Iligan|Valencia)\b/i, replacement: 'Northern Mindanao' },
+    
+    // Region XI - Davao Region
+    { pattern: /\b(?:Region\s*[XI11]|Davao(?!\s+Occidental|\s+Oriental|\s+del\s+Norte|\s+del\s+Sur|\s+de\s+Oro)\s*Region|Davao\s*del\s*Norte|Davao\s*del\s*Sur|Davao\s*Oriental|Davao\s*Occidental|Davao\s*de\s*Oro|Compostela\s*Valley|Davao\s*City|Panabo|Tagum|Digos|Mati)\b/i, replacement: 'Davao Region' },
+    
+    // Region XII - SOCCSKSARGEN
+    { pattern: /\b(?:Region\s*[XII12]|SOCCSKSARGEN|South\s*Cotabato|Cotabato|Sultan\s*Kudarat|Sarangani|General\s*Santos|Koronadal|Kidapawan|Tacurong)\b/i, replacement: 'SOCCSKSARGEN' },
+    
+    // Region XIII - CARAGA
+    { pattern: /\b(?:Region\s*[XIII13]|CARAGA|Agusan\s*del\s*Norte|Agusan\s*del\s*Sur|Dinagat\s*Islands|Surigao\s*del\s*Norte|Surigao\s*del\s*Sur|Butuan|Surigao\s*City|Tandag|Bislig)\b/i, replacement: 'CARAGA' },
+    
+    // BARMM - Bangsamoro Autonomous Region in Muslim Mindanao
+    { pattern: /\b(?:BARMM|Bangsamoro|ARMM|Muslim\s*Mindanao|Basilan|Lanao\s*del\s*Sur|Maguindanao|Sulu|Tawi-Tawi|Cotabato\s*City|Marawi|Lamitan)\b/i, replacement: 'Bangsamoro' },
+    
+    // Handling Roman numerals for regions (I to XIII)
+    { pattern: /Region\s+(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII)\b/i, group: 1 },
   ];
 
+  // Enhancing search by checking for multiple regions and combining results
+  let foundRegions = [];
+  
   for (const { pattern, group, replacement } of regionPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      return replacement || match[group];
+    const matches = text.match(new RegExp(pattern, 'gi'));
+    if (matches) {
+      foundRegions.push(replacement || matches[group]);
     }
   }
-
+  
+  // Remove duplicates and return
+  const uniqueRegions = [...new Set(foundRegions)];
+  
+  if (uniqueRegions.length > 0) {
+    // If multiple regions, join them or return the first one
+    if (uniqueRegions.length > 3) {
+      return 'Multiple Regions';
+    } else if (uniqueRegions.length > 1) {
+      return uniqueRegions.join(', ');
+    } else {
+      return uniqueRegions[0];
+    }
+  }
+  
   return 'Nationwide'; // Default if no specific region is found
 }
 
@@ -495,12 +555,22 @@ async function storeAlerts(alerts) {
 
   console.log(`Processing ${alerts.length} alerts for storage...`);
   
-  // Ensure no low risk alerts are included (double-check)
-  const filteredAlerts = alerts.filter(alert => alert.severity !== 'low');
+  // Filter out alerts with insufficient information
+  const filteredAlerts = alerts.filter(alert => {
+    // Check that description has enough content to be useful
+    const hasInformation = alert.description && alert.description.length >= 15;
+    
+    if (!hasInformation) {
+      console.log(`Filtering out alert with insufficient information: ${alert.title}`);
+      return false;
+    }
+    
+    return true;
+  });
   
-  // Log if any low alerts were found (this should not happen with the updated determineSeverity function)
+  // Log filtering statistics
   if (alerts.length !== filteredAlerts.length) {
-    console.warn(`WARNING: Found ${alerts.length - filteredAlerts.length} low risk alerts that were filtered out. This should not happen with current configuration.`);
+    console.warn(`INFO: Filtered out ${alerts.length - filteredAlerts.length} alerts with insufficient information.`);
   }
   
   // If no alerts remain after filtering, exit early
@@ -594,7 +664,7 @@ async function storeAlerts(alerts) {
     }
   }
   
-  console.log(`Alerts storage summary: ${addedCount} new alerts added, ${skippedCount} duplicates skipped (low risk alerts excluded)`);
+  console.log(`Alerts storage summary: ${addedCount} new alerts added, ${skippedCount} duplicates skipped (alerts with insufficient information excluded)`);
 }
 
 // Function to get sample alerts when scraping is not possible
@@ -661,42 +731,83 @@ async function getSampleAlerts() {
   ];
 }
 
-// Main function to run the scraper
-async function runScraper() {
-  console.log('Starting disaster alert scraper...');
-  
+// Function to log scraper status to Supabase
+async function logScraperStatus(status, message) {
   try {
+    const timestamp = new Date().toISOString();
+    console.log(`[${status.toUpperCase()}] ${message}`);
+    
+    const { error } = await supabase
+      .from('scraper_logs')
+      .insert([{
+        timestamp,
+        status,
+        message
+      }]);
+      
+    if (error) {
+      console.error('Error logging scraper status:', error);
+    }
+  } catch (error) {
+    console.error('Unexpected error logging scraper status:', error);
+  }
+}
+
+// Function to run the scraper
+async function runScraper() {
+  try {
+    await logScraperStatus('starting', 'Starting disaster alert scraper...');
+    
     let alerts = [];
     
     // Check if we should use sample alerts
     if (config.useSampleAlerts) {
+      await logScraperStatus('running', 'Using sample alerts instead of scraping...');
       alerts = await getSampleAlerts();
     } else {
-      // Scrape data from sources
+      // Scrape PAGASA
+      await logScraperStatus('running', 'Scraping PAGASA...');
       const pagasaAlerts = await scrapePAGASA();
+      
+      // Scrape PHIVOLCS
+      await logScraperStatus('running', 'Scraping PHIVOLCS...');
       const phivolcsAlerts = await scrapePHIVOLCS();
       
       // Combine alerts from all sources
       alerts = [...pagasaAlerts, ...phivolcsAlerts];
+      await logScraperStatus('running', `Found ${alerts.length} total alerts from all sources`);
     }
     
     // Store alerts in Supabase
+    await logScraperStatus('running', 'Storing alerts in database...');
     await storeAlerts(alerts);
     
-    console.log('Scraper completed successfully!');
+    await logScraperStatus('completed', 'Scraper completed successfully!');
   } catch (error) {
     console.error('Error running scraper:', error);
+    await logScraperStatus('error', `Error running scraper: ${error.message}`);
   }
 }
 
-// Run the scraper once at startup
-runScraper();
-
-// Schedule the scraper to run at the interval specified in config
-const minutes = Math.floor(config.scrapingInterval / (60 * 1000));
-cron.schedule(`*/${minutes} * * * *`, () => {
-  console.log(`Running scheduled scraper at ${new Date().toISOString()}...`);
+// Initialize the scraper and scheduler
+async function initializeScraperAndScheduler() {
+  const minutes = Math.floor(config.scrapingInterval / (60 * 1000));
+  
+  // Log initialization status
+  await logScraperStatus('starting', `Disaster alert scraper initialized and scheduled to run every ${minutes} minutes.`);
+  console.log(`Disaster alert scraper initialized and scheduled to run every ${minutes} minutes.`);
+  
+  // Schedule the scraper to run at the interval specified in config
+  const scheduledTask = cron.schedule(`*/${minutes} * * * *`, () => {
+    console.log(`Running scheduled scraper at ${new Date().toISOString()}`);
+    runScraper();
+  });
+  
+  // Run the scraper once at startup
   runScraper();
-});
+}
 
-console.log(`Disaster alert scraper initialized and scheduled to run every ${minutes} minutes.`);
+// Start the scraper
+initializeScraperAndScheduler().catch(error => {
+  console.error('Error initializing scraper:', error);
+});

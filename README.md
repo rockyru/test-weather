@@ -18,10 +18,10 @@ The system is designed to capture all levels of disaster alerts - from high-risk
 ### Key Features
 
 - **Real-time Updates**: Displays alerts as they are published using Supabase Realtime
-- **Alert Coverage**: Captures all disaster-related information, including low-level alerts and general weather conditions
+- **Alert Coverage**: Captures disaster-related information with meaningful content, filtering out alerts with insufficient information
 - **Risk Severity Indication**: Categorizes alerts by severity (high, medium, low) to help prioritize response
-- **Advanced Filtering**: Filter alerts by category, region, and severity level
-- **Mobile-First Design**: Responsive interface built with Tailwind CSS
+- **Advanced Filtering**: Filter alerts by category, region, and severity level with mobile-friendly toggle controls
+- **Mobile-First Design**: Compact, responsive interface optimized for all devices with expandable alerts
 - **Automated Scraping**: Scheduled scraper runs every 15 minutes via GitHub Actions
 
 ## 🛠️ Tech Stack
@@ -87,7 +87,7 @@ npm install
 node index.js
 ```
 
-The scraper will collect alerts from all risk levels, including low-risk conditions, and categorize them by severity.
+The scraper will collect alerts from all risk levels (high, medium, low) as long as they contain meaningful information. Alerts with insufficient information are automatically filtered out regardless of risk level.
 
 ### Deployment
 
