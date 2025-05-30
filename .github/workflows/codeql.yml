@@ -4,10 +4,10 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    # Run CodeQL analysis on pull requests targeting the main branch
-    branches: [ main ]
+    # Run CodeQL analysis on pull requests targeting the master branch
+    branches: [ master ]
   schedule:
     - cron: '0 0 * * 0' # every Sunday at midnight
 
@@ -36,8 +36,26 @@ jobs:
           languages: ${{ matrix.language }}
           config-file: .github/codeql/codeql-config.yml # optional if you need custom config
 
+      # Set up Node.js environment for better JavaScript analysis
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      # Install dependencies for better analysis context
+      - name: Install dependencies
+        run: |
+          if [ -f "package.json" ]; then npm ci; fi
+          if [ -f "scraper/package.json" ]; then cd scraper && npm ci && cd ..; fi
+
+      # Use autobuild for standard build process
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
+      # Run the analysis with advanced settings
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+          output: sarif-results
