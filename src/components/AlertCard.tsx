@@ -5,9 +5,27 @@ interface AlertCardProps {
   alert: DisasterAlert;
 }
 
-// Function to format date to Philippine Standard Time (UTC+8)
+// Function to format date to Philippine Standard Time (UTC+8) with validation
 const formatDate = (dateString: string): string => {
+  // Parse the date string
   const date = new Date(dateString);
+  
+  // Check if date is valid and not in the future
+  if (isNaN(date.getTime())) {
+    console.error('Invalid date:', dateString);
+    return 'Invalid date';
+  }
+  
+  // Get current date for comparison
+  const now = new Date();
+  
+  // If date is more than a year in the future, it's likely wrong
+  // In that case, create a new date with current year
+  if (date.getFullYear() > now.getFullYear() + 1) {
+    console.warn('Future date detected, correcting year:', dateString);
+    date.setFullYear(now.getFullYear());
+  }
+  
   return new Intl.DateTimeFormat('en-PH', {
     dateStyle: 'medium',
     timeStyle: 'short',

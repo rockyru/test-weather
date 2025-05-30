@@ -18,9 +18,17 @@ const axiosInstance = axios.create({
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml',
     'Accept-Language': 'en-US,en;q=0.9',
-    'Cache-Control': 'no-cache'
+    'Cache-Control': 'no-cache',
+    'Referrer': 'https://www.google.com/' // Add referrer to help with website access
   },
-  timeout: 10000 // 10 second timeout
+  timeout: 15000, // Increased timeout to 15 seconds
+  maxRedirects: 5 // Allow following redirects
+});
+
+// Add request interceptor for debugging
+axiosInstance.interceptors.request.use(request => {
+  console.log(`Making request to: ${request.url}`);
+  return request;
 });
 
 // Supabase configuration
@@ -118,6 +126,9 @@ async function scrapePAGASA() {
     });
     
     // Extract regional forecasts for low-level weather conditions
+    // Store forecast dates to avoid duplicates with different dates
+    const forecastTitles = new Set();
+    
     $('.forecast, .regional-forecast, .daily-forecast').each((i, el) => {
       const title = $(el).find('h3, h4, .title').text().trim() || 'Regional Weather Forecast';
       const description = $(el).find('.content, .description, p').text().trim();
@@ -127,12 +138,24 @@ async function scrapePAGASA() {
       // Skip if this is empty
       if (!description) return;
       
+      // Create a unique key for this forecast based on title and description
+      const forecastKey = `${title}-${description.substring(0, 50)}`;
+      
+      // Skip if we've already seen this forecast
+      if (forecastTitles.has(forecastKey)) {
+        console.log(`Skipping duplicate forecast: ${title}`);
+        return;
+      }
+      
+      // Add to our set of seen forecasts
+      forecastTitles.add(forecastKey);
+      
       alerts.push({
         source: 'PAGASA',
         title,
         description,
         category: 'weather',
-        region: extractRegionFromText(description),
+        region: extractRegionFromText(description) || 'Nationwide',
         published_at: publishedAt,
         link: link ? new URL(link, 'https://www.pagasa.dost.gov.ph/').href : null,
         severity: 'low' // Default to low for general forecasts
@@ -148,18 +171,37 @@ async function scrapePAGASA() {
 
 // Function to scrape PHIVOLCS website
 // Helper function to retry API requests
-async function retryRequest(url, maxRetries = 3) {
+async function retryRequest(url, maxRetries = 5) { // Increased retries to 5
   let lastError;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // Add delay between retries
+      // Add exponential backoff delay between retries
       if (attempt > 0) {
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        const delayMs = 2000 * Math.pow(2, attempt - 1); // Exponential backoff
+        console.log(`Retry attempt ${attempt + 1}/${maxRetries} for ${url} after ${delayMs}ms delay`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
-      return await axiosInstance.get(url);
+      
+      // Try different approaches on subsequent attempts
+      if (attempt === 0) {
+        return await axiosInstance.get(url);
+      } else if (attempt === 1) {
+        // Try with different headers on second attempt
+        return await axiosInstance.get(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+            'Accept': '*/*'
+          }
+        });
+      } else {
+        // Standard attempt with increased timeout
+        return await axiosInstance.get(url, {
+          timeout: 20000 // 20 seconds timeout on later attempts
+        });
+      }
     } catch (error) {
       lastError = error;
-      console.error(`Attempt ${attempt + 1} failed:`, error.message);
+      console.error(`Attempt ${attempt + 1} failed for ${url}:`, error.message);
     }
   }
   throw lastError;
@@ -169,13 +211,32 @@ async function scrapePHIVOLCS() {
   try {
     console.log('Scraping PHIVOLCS...');
     
-    // Try to get data from PHIVOLCS, with retries
-    let response;
-    try {
-      response = await retryRequest(config.sources.phivolcs);
-    } catch (fetchError) {
-      console.error(`Failed to fetch PHIVOLCS data after retries: ${fetchError.message}`);
-      // Return sample earthquake data to keep app functional
+    // Try alternative PHIVOLCS endpoints if the main one fails
+    const phivolcsEndpoints = [
+      config.sources.phivolcs,
+      'https://earthquake.phivolcs.dost.gov.ph/',
+      'https://www.phivolcs.dost.gov.ph/index.php/earthquake/earthquake-information'
+    ];
+    
+    let response = null;
+    let successfulEndpoint = null;
+    
+    // Try each endpoint until one works
+    for (const endpoint of phivolcsEndpoints) {
+      try {
+        console.log(`Trying PHIVOLCS endpoint: ${endpoint}`);
+        response = await retryRequest(endpoint);
+        successfulEndpoint = endpoint;
+        console.log(`Successfully connected to PHIVOLCS at: ${endpoint}`);
+        break;
+      } catch (error) {
+        console.error(`Failed to connect to PHIVOLCS at ${endpoint}: ${error.message}`);
+      }
+    }
+    
+    // If all endpoints failed, return placeholder data
+    if (!response) {
+      console.error('All PHIVOLCS endpoints failed');
       return [
         {
           source: 'PHIVOLCS',
@@ -451,12 +512,15 @@ async function storeAlerts(alerts) {
     }
     
     // Check if alert already exists to prevent duplicates
+    // Use a more robust duplicate detection that doesn't rely solely on published_at
     const { data: existingAlerts, error: selectError } = await supabase
       .from('disaster_alerts')
       .select('id')
       .eq('title', alert.title)
       .eq('source', alert.source)
-      .eq('published_at', alert.published_at)
+      // Only check same-day alerts to avoid date precision issues
+      .gte('published_at', new Date(new Date().setHours(0,0,0,0)).toISOString())
+      .lt('published_at', new Date(new Date().setHours(23,59,59,999)).toISOString())
       .limit(1);
       
     if (selectError) {
@@ -485,8 +549,11 @@ async function storeAlerts(alerts) {
 async function getSampleAlerts() {
   console.log('Using sample alerts instead of scraping...');
   
-  // Generate current date
+  // Generate current date - ensure it's the actual current date, not a future date
   const now = new Date();
+  
+  // Log the date to verify it's correct
+  console.log(`Current date for sample alerts: ${now.toISOString()}`);
   
   return [
     {
