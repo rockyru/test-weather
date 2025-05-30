@@ -17,10 +17,17 @@ const Dashboard: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // Calculate date 7 days ago for filtering
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        
+        console.log('Fetching alerts from:', sevenDaysAgo.toISOString());
 
         const { data, error } = await supabase
           .from('disaster_alerts')
           .select('*')
+          .gte('published_at', sevenDaysAgo.toISOString())
           .order('published_at', { ascending: false });
 
         if (error) {
