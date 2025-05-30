@@ -36,7 +36,7 @@ const supabase = createClient(config.supabaseUrl, config.supabaseKey);
 
 console.log(`Scraper initialized with Supabase URL: ${config.supabaseUrl}`);
 console.log(`Scraper will run every ${config.scrapingInterval / (60 * 1000)} minutes`);
-console.log('Enhanced scraper: Now capturing all alert levels, including low-risk conditions');
+console.log('Enhanced scraper: Only capturing medium and high risk alerts, low-risk conditions are excluded');
 
 // Function to scrape PAGASA website
 async function scrapePAGASA() {
@@ -158,7 +158,7 @@ async function scrapePAGASA() {
         region: extractRegionFromText(description) || 'Nationwide',
         published_at: publishedAt,
         link: link ? new URL(link, 'https://www.pagasa.dost.gov.ph/').href : null,
-        severity: 'low' // Default to low for general forecasts
+        severity: 'medium' // Changed from low to medium as per requirement to remove low risk alerts
       });
     });
 
@@ -424,18 +424,9 @@ function determineSeverity(title, description) {
     return 'high';
   }
   
-  // Check for medium severity keywords
-  if (lowerTitle.includes('advisory') || lowerDesc.includes('advisory') ||
-      lowerTitle.includes('alert') || lowerDesc.includes('alert') ||
-      lowerTitle.includes('caution') || lowerDesc.includes('caution') ||
-      lowerTitle.includes('moderate') || lowerDesc.includes('moderate') ||
-      lowerTitle.includes('signal no. 1') || lowerDesc.includes('signal no. 1') ||
-      lowerTitle.includes('signal no. 2') || lowerDesc.includes('signal no. 2')) {
-    return 'medium';
-  }
-  
-  // Everything else is low severity
-  return 'low';
+  // All other alerts default to medium severity - we no longer use 'low' severity
+  // as per requirement to remove low risk alerts
+  return 'medium';
 }
 
 // Helper function to determine volcano severity from alert level
@@ -504,13 +495,17 @@ async function storeAlerts(alerts) {
 
   console.log(`Processing ${alerts.length} alerts for storage...`);
   
-  // Filter out low risk alerts
+  // Ensure no low risk alerts are included (double-check)
   const filteredAlerts = alerts.filter(alert => alert.severity !== 'low');
-  console.log(`Filtered out ${alerts.length - filteredAlerts.length} low risk alerts. Remaining alerts: ${filteredAlerts.length}`);
+  
+  // Log if any low alerts were found (this should not happen with the updated determineSeverity function)
+  if (alerts.length !== filteredAlerts.length) {
+    console.warn(`WARNING: Found ${alerts.length - filteredAlerts.length} low risk alerts that were filtered out. This should not happen with current configuration.`);
+  }
   
   // If no alerts remain after filtering, exit early
   if (filteredAlerts.length === 0) {
-    console.log('No alerts to store after filtering out low risk alerts.');
+    console.log('No alerts to store after filtering.');
     return;
   }
   

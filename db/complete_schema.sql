@@ -17,7 +17,7 @@ CREATE TABLE disaster_alerts (
   region TEXT,
   published_at TIMESTAMP,
   link TEXT,
-  severity TEXT CHECK (severity IN ('low', 'medium', 'high')),
+  severity TEXT CHECK (severity IN ('medium', 'high')),
   created_at TIMESTAMP DEFAULT now()
 );
 
@@ -73,16 +73,7 @@ INSERT INTO disaster_alerts (
   link,
   severity
 ) VALUES 
-(
-  'PAGASA',
-  'Weather Advisory: Cloudy skies in Zamboanga Peninsula',
-  'Cloudy skies with scattered rains and thunderstorms are expected due to the trough of a low-pressure area. This weather condition may lead to possible flash floods or landslides in areas prone to these hazards.',
-  'weather',
-  'Zamboanga Peninsula',
-  now(),
-  'https://www.pagasa.dost.gov.ph/weather',
-  'low'
-),
+
 (
   'PHIVOLCS',
   'Volcano Advisory: Kanlaon Volcano Alert Level 3',
@@ -93,26 +84,8 @@ INSERT INTO disaster_alerts (
   'https://www.phivolcs.dost.gov.ph/volcano-bulletin',
   'high'
 ),
-(
-  'PHIVOLCS',
-  'Volcano Status: Taal Volcano Alert Level 1',
-  'Alert Level 1 (Low-Level Unrest) is maintained over Taal Volcano. The public is advised to avoid entry into the Taal Volcano Island as it remains a Permanent Danger Zone.',
-  'volcano',
-  'CALABARZON',
-  now(),
-  'https://www.phivolcs.dost.gov.ph/volcano-bulletin',
-  'low'
-),
-(
-  'PHIVOLCS',
-  'Volcano Status: Mayon Volcano Alert Level 1',
-  'Alert Level 1 (Low-Level Unrest) is maintained over Mayon Volcano. The public is advised to avoid entry into the 6-kilometer radius Permanent Danger Zone.',
-  'volcano',
-  'Bicol Region',
-  now(),
-  'https://www.phivolcs.dost.gov.ph/volcano-bulletin',
-  'low'
-),
+
+
 (
   'PAGASA',
   'Rainfall Advisory',
