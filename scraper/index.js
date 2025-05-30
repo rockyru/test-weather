@@ -502,47 +502,94 @@ async function storeAlerts(alerts) {
     return;
   }
 
-  console.log(`Storing ${alerts.length} alerts in Supabase...`);
+  console.log(`Processing ${alerts.length} alerts for storage...`);
   
+  // Create a map to deduplicate alerts by title/source/date (strictly ignoring time)
+  const uniqueAlertMap = new Map();
+  
+  // First pass - create unique keys based ONLY on title, source, and date (no time component)
   for (const alert of alerts) {
     // Format date properly to avoid timezone issues
     if (alert.published_at instanceof Date) {
-      // Convert to ISO string in a Postgres-compatible format
-      alert.published_at = alert.published_at.toISOString();
-    }
-    
-    // Check if alert already exists to prevent duplicates
-    // Use a more robust duplicate detection that doesn't rely solely on published_at
-    const { data: existingAlerts, error: selectError } = await supabase
-      .from('disaster_alerts')
-      .select('id')
-      .eq('title', alert.title)
-      .eq('source', alert.source)
-      // Only check same-day alerts to avoid date precision issues
-      .gte('published_at', new Date(new Date().setHours(0,0,0,0)).toISOString())
-      .lt('published_at', new Date(new Date().setHours(23,59,59,999)).toISOString())
-      .limit(1);
+      // Keep original date object for sorting
+      alert.originalDate = new Date(alert.published_at);
       
-    if (selectError) {
-      console.error('Error checking for existing alert:', selectError);
-      continue;
+      // Convert to ISO string for storage
+      alert.published_at = alert.published_at.toISOString();
+    } else {
+      // If already a string, parse it back to a date for comparison
+      alert.originalDate = new Date(alert.published_at);
     }
     
-    // If alert doesn't exist, insert it
-    if (!existingAlerts || existingAlerts.length === 0) {
-      const { error: insertError } = await supabase
-        .from('disaster_alerts')
-        .insert([alert]);
-        
-      if (insertError) {
-        console.error('Error inserting alert:', insertError);
-      } else {
-        console.log(`Alert stored: ${alert.title}`);
-      }
-    } else {
-      console.log(`Alert already exists: ${alert.title}`);
+    // Create a unique key using ONLY title, source, and date (explicitly without time component)
+    const alertDate = new Date(alert.originalDate);
+    // Format as YYYY-MM-DD to ensure consistency
+    const dateString = `${alertDate.getFullYear()}-${(alertDate.getMonth() + 1).toString().padStart(2, '0')}-${alertDate.getDate().toString().padStart(2, '0')}`;
+    const uniqueKey = `${alert.title.trim()}|${alert.source}|${dateString}`;
+    
+    console.log(`Generated unique key: ${uniqueKey}`);
+    
+    // Only keep the most recent alert for each unique key
+    if (!uniqueAlertMap.has(uniqueKey) || 
+        alert.originalDate > uniqueAlertMap.get(uniqueKey).originalDate) {
+      uniqueAlertMap.set(uniqueKey, alert);
     }
   }
+  
+  // Convert the map back to an array
+  const uniqueAlerts = Array.from(uniqueAlertMap.values());
+  
+  console.log(`After deduplication, storing ${uniqueAlerts.length} unique alerts in Supabase...`);
+  
+  let addedCount = 0;
+  let skippedCount = 0;
+  
+  for (const alert of uniqueAlerts) {
+    // Remove helper property before storage
+    delete alert.originalDate;
+    
+    try {
+      // Check if alert already exists in database with the SAME title and source on the SAME DAY
+      const alertDate = new Date(alert.published_at);
+      // Create date range for the entire day (midnight to 11:59:59 PM)
+      const startOfDay = new Date(Date.UTC(alertDate.getFullYear(), alertDate.getMonth(), alertDate.getDate(), 0, 0, 0));
+      const endOfDay = new Date(Date.UTC(alertDate.getFullYear(), alertDate.getMonth(), alertDate.getDate(), 23, 59, 59, 999));
+      
+      const { data: existingAlerts, error: selectError } = await supabase
+        .from('disaster_alerts')
+        .select('id, title, published_at')
+        .eq('title', alert.title.trim())
+        .eq('source', alert.source)
+        .gte('published_at', startOfDay.toISOString())
+        .lt('published_at', endOfDay.toISOString());
+      
+      if (selectError) {
+        console.error('Error checking for existing alert:', selectError);
+        continue;
+      }
+      
+      // If alert doesn't exist in database for this day, insert it
+      if (!existingAlerts || existingAlerts.length === 0) {
+        const { error: insertError } = await supabase
+          .from('disaster_alerts')
+          .insert([alert]);
+          
+        if (insertError) {
+          console.error('Error inserting alert:', insertError);
+        } else {
+          console.log(`Alert stored: ${alert.title} for ${new Date(alert.published_at).toLocaleDateString()}`);
+          addedCount++;
+        }
+      } else {
+        console.log(`Duplicate prevention: Alert already exists in database: ${alert.title} for ${new Date(alert.published_at).toLocaleDateString()}`);
+        skippedCount++;
+      }
+    } catch (error) {
+      console.error('Unexpected error during alert storage:', error);
+    }
+  }
+  
+  console.log(`Alerts storage summary: ${addedCount} new alerts added, ${skippedCount} duplicates skipped`);
 }
 
 // Function to get sample alerts when scraping is not possible

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DisasterAlertFilter } from '../supabase';
 
 interface FilterBarProps {
   filters: DisasterAlertFilter;
   onFilterChange: (filters: DisasterAlertFilter) => void;
   regions: string[];
+  onSearchChange: (searchQuery: string) => void;
 }
 
 const categories = [
@@ -25,7 +26,17 @@ const severityLevels = [
   { value: 'low', label: 'Low Risk' },
 ];
 
-const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions }) => {
+const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions, onSearchChange }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Debounce search input to avoid excessive filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange(searchQuery);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, onSearchChange]);
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFilterChange({ ...filters, category: e.target.value });
   };
@@ -42,6 +53,17 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions 
     <div className="filter-bar">
       <div>
         <h2 className="filter-bar-title">Disaster Alerts</h2>
+        
+        <div className="search-container">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search alerts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search alerts"
+          />
+        </div>
         
         <div className="filter-controls">
           <div>

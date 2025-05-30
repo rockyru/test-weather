@@ -69,9 +69,22 @@ const getSeverityClass = (severity: string | null): string => {
   }
 };
 
+// Function to truncate text with ellipsis
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
 const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
   const { icon, cardClass } = getCategoryStyles(alert.category);
   const severityClass = getSeverityClass(alert.severity);
+  
+  // State to toggle between truncated and full description
+  const [showFullDescription, setShowFullDescription] = React.useState(false);
+  
+  // Truncate description if it's too long
+  const maxDescriptionLength = 150;
+  const shouldTruncate = alert.description && alert.description.length > maxDescriptionLength;
   
   return (
     <div className={`alert-card ${cardClass} ${severityClass}`}>
@@ -85,7 +98,25 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
       
       <div>
         {alert.description && (
-          <p className="alert-description">{alert.description}</p>
+          <div className="alert-description-container">
+            <p className="alert-description">
+              {shouldTruncate && !showFullDescription
+                ? truncateText(alert.description, maxDescriptionLength)
+                : alert.description
+              }
+            </p>
+            {shouldTruncate && (
+              <button 
+                className="read-more-button" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowFullDescription(!showFullDescription);
+                }}
+              >
+                {showFullDescription ? 'Read less' : 'Read more'}
+              </button>
+            )}
+          </div>
         )}
         
         <div className="alert-meta">
