@@ -688,7 +688,7 @@ async function getSampleAlerts() {
       description: 'Seventy-two volcanic earthquakes recorded beneath the northern and northwestern flanks of Kanlaon Volcano.',
       category: 'volcano',
       region: 'Negros Island Region',
-      published_at: new Date('2025-05-12T13:30:00'),
+      published_at: new Date('2025-05-12T13:30:00+08:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31125-kanlaon-volcano-advisory-12-may-2025-1-30-pm',
       severity: 'medium',
       // Not using display_date field as it's causing schema issues
@@ -699,7 +699,7 @@ async function getSampleAlerts() {
       description: 'Moderately explosive eruption at 2:55 AM, generating a 4.5 km high plume.',
       category: 'volcano',
       region: 'Negros Island Region',
-      published_at: new Date('2025-05-13T04:30:00'),
+      published_at: new Date('2025-05-13T04:30:00+08:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31145-kanlaon-volcano-eruption-bulletin-13-may-2025-04-30-am',
       severity: 'high',
       // Not using display_date field as it's causing schema issues
@@ -710,7 +710,7 @@ async function getSampleAlerts() {
       description: 'Taal Volcano remains under Alert Level 1. Sulfur dioxide emission measured at 1,812 tonnes/day.',
       category: 'volcano',
       region: 'CALABARZON',
-      published_at: new Date('2025-05-27T00:00:00'),
+      published_at: new Date('2025-05-27T00:00:00+08:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-hazard/volcano-bulletin2/taal-volcano',
       severity: 'low',
       // Not using display_date field as it's causing schema issues
@@ -719,22 +719,22 @@ async function getSampleAlerts() {
     // Rainfall and Weather Advisories
     {
       source: 'PAGASA',
-      title: 'Rainfall Advisory No. 2 – Visayas',
+      title: 'Rainfall Advisory No. 2 - Visayas',
       description: 'Light to moderate to at times heavy rains affecting portions of Visayas, with possible flooding in low-lying areas.',
       category: 'rainfall',
       region: 'Eastern and Central Visayas',
-      published_at: new Date('2025-05-28T05:00:00'),
+      published_at: new Date('2025-05-28T05:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/regional-forecast/visprsd',
       severity: 'medium',
       // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
-      title: 'Rainfall Advisory No. 4 – Southern Luzon',
+      title: 'Rainfall Advisory No. 4 - Southern Luzon',
       description: 'Rainfall has weakened; this is the final advisory for Southern Luzon regarding today\'s system.',
       category: 'rainfall',
       region: 'Southern Luzon',
-      published_at: new Date('2025-05-28T14:00:00'),
+      published_at: new Date('2025-05-28T14:00:00+08:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/southern-luzon',
       severity: 'low',
       // Not using display_date field as it's causing schema issues
@@ -745,7 +745,7 @@ async function getSampleAlerts() {
       description: 'Scattered rains over Mindanao and parts of Visayas due to the Intertropical Convergence Zone (ITCZ).',
       category: 'weather',
       region: 'Nationwide',
-      published_at: new Date('2025-05-23T00:00:00'),
+      published_at: new Date('2025-05-23T00:00:00+08:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/weather/weather-outlook-weekly',
       severity: 'medium',
       // Not using display_date field as it's causing schema issues
@@ -756,7 +756,7 @@ async function getSampleAlerts() {
       description: 'Temperature and rainfall levels within normal range. No extreme anomalies recorded.',
       category: 'climate',
       region: 'Nationwide',
-      published_at: new Date('2025-05-27T08:00:00'),
+      published_at: new Date('2025-05-27T08:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/climate/climate-monitoring',
       severity: 'low',
       // Not using display_date field as it's causing schema issues
@@ -767,29 +767,29 @@ async function getSampleAlerts() {
       description: 'Near-normal to above-normal rainfall conditions expected from June to August in most parts of the country.',
       category: 'climate',
       region: 'Nationwide',
-      published_at: new Date('2025-05-29T00:00:00'),
+      published_at: new Date('2025-05-29T00:00:00+08:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/climate/climate-prediction/seasonal-forecast',
       severity: 'medium',
       // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
-      title: 'Thunderstorm Advisory No. 19 – NCR',
+      title: 'Thunderstorm Advisory No. 19 - NCR',
       description: 'Moderate to heavy rainshowers with lightning and strong winds expected over Metro Manila and nearby provinces.',
       category: 'rainfall',
       region: 'Metro Manila',
-      published_at: new Date('2025-05-28T02:00:00'),
+      published_at: new Date('2025-05-28T02:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/regional-forecast/ncrprsd',
       severity: 'medium',
       // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
-      title: 'Weather Advisory No. 4 – ITCZ',
+      title: 'Weather Advisory No. 4 - ITCZ',
       description: 'Heavy rainfall outlook due to ITCZ, with potential impacts including widespread flooding and landslides.',
       category: 'weather',
       region: 'Nationwide',
-      published_at: new Date('2025-05-23T05:00:00'),
+      published_at: new Date('2025-05-23T05:00:00+08:00'),
       link: 'https://pubfiles.pagasa.dost.gov.ph/tamss/weather/advisory.pdf',
       severity: 'high',
       // Not using display_date field as it's causing schema issues
@@ -802,7 +802,7 @@ async function getSampleAlerts() {
       description: 'No tropical cyclone-like vortex present inside the PAR; low chance of development in the coming week.',
       category: 'typhoon',
       region: 'Nationwide',
-      published_at: new Date('2025-05-30T00:00:00'),
+      published_at: new Date('2025-05-30T00:00:00+08:00'),
       link: 'https://pubfiles.pagasa.dost.gov.ph/pagasaweb/files/climate/tcthreat/TC_Threat_and_S2S_Forecast.pdf',
       severity: 'low',
       // Not using display_date field as it's causing schema issues
@@ -811,11 +811,11 @@ async function getSampleAlerts() {
     // Flood Advisories
     {
       source: 'PAGASA',
-      title: 'Flood Advisory – Dam Water Level Update',
+      title: 'Flood Advisory - Dam Water Level Update',
       description: 'Monitoring of reservoir water levels in major dams; some deviations from normal high water levels observed.',
       category: 'flood',
       region: 'Nationwide',
-      published_at: new Date('2025-05-28T08:00:00'),
+      published_at: new Date('2025-05-28T08:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/flood',
       severity: 'medium',
       // Not using display_date field as it's causing schema issues
@@ -828,7 +828,7 @@ async function getSampleAlerts() {
       description: 'Magnitude 2.4 tectonic earthquake recorded 60 km southeast of Jose Abad Santos, Davao Occidental.',
       category: 'earthquake',
       region: 'Davao Region',
-      published_at: new Date('2025-05-25T13:21:00'),
+      published_at: new Date('2025-05-25T13:21:00+08:00'),
       link: 'https://earthquake.phivolcs.dost.gov.ph/2025_Earthquake_Information/May/2025_0525_0521_B1.html',
       severity: 'low',
       // Not using display_date field as it's causing schema issues
@@ -841,7 +841,7 @@ async function getSampleAlerts() {
       description: 'Residents along mountain slopes advised of possible landslides, mudslides, rockslides, and flash floods.',
       category: 'landslide',
       region: 'Northern Luzon',
-      published_at: new Date('2025-05-30T05:00:00'),
+      published_at: new Date('2025-05-30T05:00:00+08:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/nlprsd',
       severity: 'medium',
       // Not using display_date field as it's causing schema issues
@@ -854,7 +854,7 @@ async function getSampleAlerts() {
       description: 'Forecast for selected Philippine cities indicating generally fair weather with isolated rain showers.',
       category: 'weather',
       region: 'Nationwide',
-      published_at: new Date('2025-05-30T00:00:00'),
+      published_at: new Date('2025-05-30T00:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/weather/weather-outlook-selected-philippine-cities',
       severity: 'low',
       // Not using display_date field as it's causing schema issues
