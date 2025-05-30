@@ -1,0 +1,7 @@
+# .github/codeql/codeql-config.yml
+name: "Custom CodeQL Config"
+paths:
+  - src
+  - scraper
+queries:
+  - uses: security-extended
