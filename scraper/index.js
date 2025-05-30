@@ -671,62 +671,152 @@ async function storeAlerts(alerts) {
 async function getSampleAlerts() {
   console.log('Using sample alerts instead of scraping...');
   
-  // Generate current date - ensure it's the actual current date, not a future date
+  // Generate current date
   const now = new Date();
   
-  // Log the date to verify it's correct
-  console.log(`Current date for sample alerts: ${now.toISOString()}`);
+  // Format function for dates
+  const formatDate = (date, addDays = 0) => {
+    const newDate = new Date(date);
+    newDate.setDate(newDate.getDate() - addDays);
+    const hours = newDate.getHours();
+    const minutes = String(newDate.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `May ${newDate.getDate()}, 2025, ${displayHours}:${minutes} ${ampm}`;
+  };
+  
+  // Define a diverse set of Philippine regions to ensure good coverage
+  const regions = [
+    'Ilocos Region',
+    'Cagayan Valley',
+    'Central Luzon',
+    'CALABARZON',
+    'MIMAROPA',
+    'Bicol Region',
+    'Western Visayas',
+    'Central Visayas',
+    'Eastern Visayas',
+    'Zamboanga Peninsula',
+    'Northern Mindanao',
+    'Davao Region',
+    'SOCCSKSARGEN',
+    'Caraga',
+    'BARMM',
+    'Cordillera Administrative Region',
+    'National Capital Region',
+    'Nationwide'
+  ];
   
   return [
-    {
-      source: 'PAGASA',
-      title: 'Weather Advisory: Cloudy skies in Zamboanga Peninsula',
-      description: 'Cloudy skies with scattered rains and thunderstorms are expected due to the trough of a low-pressure area. This weather condition may lead to possible flash floods or landslides in areas prone to these hazards.',
-      category: 'weather',
-      region: 'Zamboanga Peninsula',
-      published_at: now,
-      link: 'https://www.pagasa.dost.gov.ph/weather',
-      severity: 'low'
-    },
     {
       source: 'PHIVOLCS',
       title: 'Volcano Advisory: Kanlaon Volcano Alert Level 3',
       description: 'Alert Level 3 (Increased Tendency Towards Hazardous Eruption) is maintained over Kanlaon Volcano. The public is reminded to remain vigilant and avoid entry into the 4-kilometer radius Permanent Danger Zone.',
       category: 'volcano',
-      region: 'Western Visayas',
+      region: regions[0], // Ilocos Region
       published_at: now,
-      link: 'https://www.phivolcs.dost.gov.ph/volcano-bulletin',
-      severity: 'high'
-    },
-    {
-      source: 'PHIVOLCS',
-      title: 'Volcano Status: Taal Volcano Alert Level 1',
-      description: 'Alert Level 1 (Low-Level Unrest) is maintained over Taal Volcano. The public is advised to avoid entry into the Taal Volcano Island as it remains a Permanent Danger Zone.',
-      category: 'volcano',
-      region: 'CALABARZON',
-      published_at: now,
-      link: 'https://www.phivolcs.dost.gov.ph/volcano-bulletin',
-      severity: 'low'
-    },
-    {
-      source: 'PHIVOLCS',
-      title: 'Volcano Status: Mayon Volcano Alert Level 1',
-      description: 'Alert Level 1 (Low-Level Unrest) is maintained over Mayon Volcano. The public is advised to avoid entry into the 6-kilometer radius Permanent Danger Zone.',
-      category: 'volcano',
-      region: 'Bicol Region',
-      published_at: now,
-      link: 'https://www.phivolcs.dost.gov.ph/volcano-bulletin',
-      severity: 'low'
+      link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31145-kanlaon-volcano-eruption-bulletin-13-may-2025-04-30-am',
+      severity: 'high',
+      display_date: formatDate(now)
     },
     {
       source: 'PAGASA',
-      title: 'Rainfall Advisory',
-      description: 'Light to moderate rainshowers with possible occasional heavy rains are expected over Metro Manila and nearby provinces in the next 2 hours.',
+      title: 'Rainfall Advisory No. 2 – Visayas',
+      description: 'Light to moderate to at times heavy rains affecting portions of Visayas, with possible flooding in low-lying areas.',
       category: 'rainfall',
-      region: 'Metro Manila',
+      region: regions[1], // Cagayan Valley
       published_at: now,
-      link: 'https://www.pagasa.dost.gov.ph/weather',
-      severity: 'medium'
+      link: 'https://www.pagasa.dost.gov.ph/regional-forecast/visprsd',
+      severity: 'medium',
+      display_date: formatDate(now, 2)
+    },
+    {
+      source: 'PHIVOLCS',
+      title: 'Eruption Bulletin: Kanlaon Volcano',
+      description: 'Kanlaon Volcano erupted at 2:55 AM producing a 5-kilometer high plume. Alert Level 3 remains in effect.',
+      category: 'volcano',
+      region: regions[6], // Western Visayas
+      published_at: now,
+      link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31145-kanlaon-volcano-eruption-bulletin-13-may-2025-04-30-am',
+      severity: 'high',
+      display_date: formatDate(now, 17)
+    },
+    {
+      source: 'PHIVOLCS',
+      title: 'Volcano Advisory: Kanlaon Seismic Activity',
+      description: '72 volcanic earthquakes were recorded beneath the flanks of Kanlaon Volcano. Continued unrest noted.',
+      category: 'volcano',
+      region: regions[5], // Bicol Region
+      published_at: now,
+      link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31125-kanlaon-volcano-advisory-12-may-2025-1-30-pm',
+      severity: 'medium',
+      display_date: formatDate(now, 18)
+    },
+    {
+      source: 'PHIVOLCS',
+      title: '24-Hour Observation: Taal Volcano',
+      description: 'Taal Volcano remains under Alert Level 1. Sulfur dioxide emission measured at 1,812 tonnes/day.',
+      category: 'volcano',
+      region: regions[3], // CALABARZON
+      published_at: now,
+      link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-hazard/volcano-bulletin2/taal-volcano',
+      severity: 'low',
+      display_date: formatDate(now, 3)
+    },
+    {
+      source: 'PHIVOLCS',
+      title: '24-Hour Observation: Kanlaon Volcano',
+      description: '17 volcanic earthquakes and degassing events observed. Volcanic activity remains elevated.',
+      category: 'volcano',
+      region: regions[8], // Eastern Visayas
+      published_at: now,
+      link: 'https://www.phivolcs.dost.gov.ph/index.php/kanlaon-volcano-bulletin-menu',
+      severity: 'high',
+      display_date: formatDate(now, 3)
+    },
+    {
+      source: 'PAGASA',
+      title: 'Rainfall Advisory No. 4 – Southern Luzon',
+      description: 'Rainfall has weakened; this is the final advisory for Southern Luzon regarding today\'s system.',
+      category: 'rainfall',
+      region: regions[4], // MIMAROPA
+      published_at: now,
+      link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/southern-luzon',
+      severity: 'low',
+      display_date: formatDate(now, 2)
+    },
+    {
+      source: 'PAGASA',
+      title: 'Weekly Weather Outlook',
+      description: 'Scattered rains over Mindanao and parts of Visayas due to the Intertropical Convergence Zone (ITCZ).',
+      category: 'rainfall',
+      region: regions[9], // Zamboanga Peninsula
+      published_at: now,
+      link: 'https://bagong.pagasa.dost.gov.ph/weather/weather-outlook-weekly',
+      severity: 'medium',
+      display_date: formatDate(now, 7)
+    },
+    {
+      source: 'PAGASA',
+      title: 'Daily Rainfall and Temperature Report',
+      description: 'Temperature and rainfall levels within normal range. No extreme anomalies recorded.',
+      category: 'climate',
+      region: regions[10], // Northern Mindanao
+      published_at: now,
+      link: 'https://www.pagasa.dost.gov.ph/climate/climate-monitoring',
+      severity: 'low',
+      display_date: formatDate(now, 3)
+    },
+    {
+      source: 'PAGASA',
+      title: 'Seasonal Climate Outlook',
+      description: 'Near-normal to above-normal rainfall conditions expected from June to August in most parts of the country.',
+      category: 'climate',
+      region: regions[11], // Davao Region
+      published_at: now,
+      link: 'https://bagong.pagasa.dost.gov.ph/climate/climate-prediction/seasonal-forecast',
+      severity: 'medium',
+      display_date: formatDate(now, 1)
     }
   ];
 }
