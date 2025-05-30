@@ -645,14 +645,20 @@ async function storeAlerts(alerts) {
       
       // If alert doesn't exist in database for this day, insert it
       if (!existingAlerts || existingAlerts.length === 0) {
-        const { error: insertError } = await supabase
+        console.log('Attempting to insert alert:', alert.title);
+        console.log('Database connection:', config.supabaseUrl);
+        
+        const { data: insertData, error: insertError } = await supabase
           .from('disaster_alerts')
-          .insert([alert]);
+          .insert([alert])
+          .select();
           
         if (insertError) {
           console.error('Error inserting alert:', insertError);
+          console.error('Full error details:', JSON.stringify(insertError));
         } else {
           console.log(`Alert stored: ${alert.title} for ${new Date(alert.published_at).toLocaleDateString()} [Severity: ${alert.severity}]`);
+          console.log('Insert response:', insertData);
           addedCount++;
         }
       } else {
@@ -685,7 +691,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-12T13:30:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31125-kanlaon-volcano-advisory-12-may-2025-1-30-pm',
       severity: 'medium',
-      display_date: 'May 12, 2025, 1:30 PM'
+      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PHIVOLCS',
@@ -696,7 +702,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-13T04:30:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31145-kanlaon-volcano-eruption-bulletin-13-may-2025-04-30-am',
       severity: 'high',
-      display_date: 'May 13, 2025, 4:30 AM'
+      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PHIVOLCS',
@@ -707,7 +713,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-27T00:00:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-hazard/volcano-bulletin2/taal-volcano',
       severity: 'low',
-      display_date: 'May 27, 2025, 12:00 AM'
+      // Not using display_date field as it's causing schema issues
     },
     
     // Rainfall and Weather Advisories
@@ -720,7 +726,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-28T05:00:00'),
       link: 'https://www.pagasa.dost.gov.ph/regional-forecast/visprsd',
       severity: 'medium',
-      display_date: 'May 28, 2025, 5:00 AM'
+      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -731,7 +737,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-28T14:00:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/southern-luzon',
       severity: 'low',
-      display_date: 'May 28, 2025, 2:00 PM'
+      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -742,7 +748,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-23T00:00:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/weather/weather-outlook-weekly',
       severity: 'medium',
-      display_date: 'May 23–30, 2025'
+      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -753,7 +759,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-27T08:00:00'),
       link: 'https://www.pagasa.dost.gov.ph/climate/climate-monitoring',
       severity: 'low',
-      display_date: 'May 27, 2025, 8:00 AM'
+      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -764,7 +770,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-29T00:00:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/climate/climate-prediction/seasonal-forecast',
       severity: 'medium',
-      display_date: 'May 29, 2025'
+      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -775,7 +781,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-28T02:00:00'),
       link: 'https://www.pagasa.dost.gov.ph/regional-forecast/ncrprsd',
       severity: 'medium',
-      display_date: 'May 28, 2025, 2:00 AM'
+      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -786,7 +792,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-23T05:00:00'),
       link: 'https://pubfiles.pagasa.dost.gov.ph/tamss/weather/advisory.pdf',
       severity: 'high',
-      display_date: 'May 23, 2025, 5:00 AM'
+      // Not using display_date field as it's causing schema issues
     },
     
     // Typhoon and Cyclone Advisories
@@ -799,7 +805,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-30T00:00:00'),
       link: 'https://pubfiles.pagasa.dost.gov.ph/pagasaweb/files/climate/tcthreat/TC_Threat_and_S2S_Forecast.pdf',
       severity: 'low',
-      display_date: 'May 30, 2025'
+      // Not using display_date field as it's causing schema issues
     },
     
     // Flood Advisories
@@ -812,7 +818,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-28T08:00:00'),
       link: 'https://www.pagasa.dost.gov.ph/flood',
       severity: 'medium',
-      display_date: 'May 28, 2025, 8:00 AM'
+      // Not using display_date field as it's causing schema issues
     },
     
     // Earthquake Advisories
@@ -825,7 +831,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-25T13:21:00'),
       link: 'https://earthquake.phivolcs.dost.gov.ph/2025_Earthquake_Information/May/2025_0525_0521_B1.html',
       severity: 'low',
-      display_date: 'May 25, 2025, 1:21 PM'
+      // Not using display_date field as it's causing schema issues
     },
     
     // Landslide Advisories
@@ -838,7 +844,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-30T05:00:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/nlprsd',
       severity: 'medium',
-      display_date: 'May 30, 2025, 5:00 AM'
+      // Not using display_date field as it's causing schema issues
     },
     
     // General Weather Forecasts
@@ -851,7 +857,7 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-30T00:00:00'),
       link: 'https://www.pagasa.dost.gov.ph/weather/weather-outlook-selected-philippine-cities',
       severity: 'low',
-      display_date: 'May 30, 2025'
+      // Not using display_date field as it's causing schema issues
     }
   ];
 }
