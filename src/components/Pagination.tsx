@@ -61,45 +61,53 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
   };
   
   return (
-    <div className="pagination">
-      {/* Previous button */}
-      <button 
-        className={`pagination-button ${currentPage === 1 ? 'disabled' : ''}`}
-        onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        aria-label="Previous page"
-      >
-        &laquo; Previous
-      </button>
-      
-      {/* Page numbers */}
-      <div className="pagination-numbers">
-        {getPageNumbers().map((page, index) => (
-          page === '...' ? (
-            <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
-          ) : (
-            <button
-              key={`page-${page}`}
-              className={`pagination-number ${currentPage === page ? 'active' : ''}`}
-              onClick={() => typeof page === 'number' && onPageChange(page)}
-              aria-label={`Go to page ${page}`}
-              aria-current={currentPage === page ? 'page' : undefined}
-            >
-              {page}
-            </button>
-          )
-        ))}
+    <div className="pagination-container">
+      <div className="pagination-info">
+        Page {currentPage} of {totalPages}
       </div>
-      
-      {/* Next button */}
-      <button 
-        className={`pagination-button ${currentPage === totalPages ? 'disabled' : ''}`}
-        onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        aria-label="Next page"
-      >
-        Next &raquo;
-      </button>
+
+      <div className="pagination">
+        {/* Previous button */}
+        <button 
+          className={`pagination-button pagination-nav ${currentPage === 1 ? 'disabled' : ''}`}
+          onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          aria-label="Previous page"
+        >
+          <span className="pagination-icon">&laquo;</span>
+          <span className="pagination-text">Prev</span>
+        </button>
+        
+        {/* Page numbers */}
+        <div className="pagination-numbers">
+          {getPageNumbers().map((page, index) => (
+            page === '...' ? (
+              <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+            ) : (
+              <button
+                key={`page-${page}`}
+                className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                onClick={() => typeof page === 'number' && onPageChange(page)}
+                aria-label={`Go to page ${page}`}
+                aria-current={currentPage === page ? 'page' : undefined}
+              >
+                {page}
+              </button>
+            )
+          ))}
+        </div>
+        
+        {/* Next button */}
+        <button 
+          className={`pagination-button pagination-nav ${currentPage === totalPages ? 'disabled' : ''}`}
+          onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          aria-label="Next page"
+        >
+          <span className="pagination-text">Next</span>
+          <span className="pagination-icon">&raquo;</span>
+        </button>
+      </div>
     </div>
   );
 };

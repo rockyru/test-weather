@@ -144,6 +144,18 @@ const Dashboard: React.FC = () => {
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // Scroll to top when page changes
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+    
+    // Update URL with page parameter to make navigation feel like page refresh
+    window.history.pushState(
+      { page }, 
+      '', 
+      `?page=${page}${filters.category ? `&category=${filters.category}` : ''}${filters.region ? `&region=${filters.region}` : ''}${filters.severity ? `&severity=${filters.severity}` : ''}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`
+    );
   };
 
   return (
