@@ -81,35 +81,22 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
   
   // State to toggle between truncated and full description
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   
   // Truncate description if it's too long
   const maxDescriptionLength = 120;
   const shouldTruncate = alert.description && alert.description.length > maxDescriptionLength;
   
-  const toggleExpand = () => {
-    setExpanded(!expanded);
-  };
+
   
   return (
-    <div className={`alert-card ${cardClass} ${severityClass} ${expanded ? 'expanded' : 'collapsed'}`}>
-      <div className="alert-header" onClick={toggleExpand}>
+    <div className={`alert-card ${cardClass} ${severityClass} expanded`}>
+      <div className="alert-header">
         <div className="alert-title-group">
           <span className="alert-icon">{icon}</span>
           <h3 className="alert-title">{alert.title}</h3>
         </div>
         <div className="alert-header-right">
           <span className="alert-source">{alert.source}</span>
-          <button className="expand-button" aria-label={expanded ? 'Collapse alert' : 'Expand alert'}>
-            <svg className="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth="2" 
-                d={expanded ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} 
-              />
-            </svg>
-          </button>
         </div>
       </div>
       
@@ -134,12 +121,12 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
         {alert.description && (
           <div className="alert-description-container">
             <p className="alert-description">
-              {shouldTruncate && !showFullDescription && !expanded
+              {shouldTruncate && !showFullDescription
                 ? truncateText(alert.description, maxDescriptionLength)
                 : alert.description
               }
             </p>
-            {shouldTruncate && !expanded && (
+            {shouldTruncate && (
               <button 
                 className="read-more-button" 
                 onClick={(e) => {
@@ -154,9 +141,7 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
           </div>
         )}
         
-        {expanded && (
-          <>
-            <div className="alert-details">
+        <div className="alert-details">
               {alert.region && (
                 <div className="alert-detail-item">
                   <span className="detail-label">Region:</span>
@@ -208,8 +193,6 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert }) => {
                 Share
               </button>
             </div>
-          </>
-        )}
       </div>
     </div>
   );
