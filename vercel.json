@@ -2,12 +2,11 @@
   "crons": [
     {
       "path": "/api/cron",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 0 * * *"
     }
   ],
   "env": {
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_KEY": "@supabase_key",
-    "CRON_SECRET": "@cron_secret"
+    "REACT_APP_SUPABASE_URL": "${REACT_APP_SUPABASE_URL}",
+    "REACT_APP_SUPABASE_ANON_KEY": "${REACT_APP_SUPABASE_ANON_KEY}"
   }
 }
