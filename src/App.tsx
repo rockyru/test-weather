@@ -3,6 +3,7 @@ import './App.css';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import Footer from './components/Footer';
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Dashboard />
       </main>
       <Footer />
+      <Analytics />
     </div>
   );
 }
