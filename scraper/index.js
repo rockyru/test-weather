@@ -624,26 +624,20 @@ async function storeAlerts(alerts) {
     delete alert.originalDate;
     
     try {
-      // Check if alert already exists in database with the SAME title and source on the SAME DAY
-      const alertDate = new Date(alert.published_at);
-      // Create date range for the entire day (midnight to 11:59:59 PM)
-      const startOfDay = new Date(Date.UTC(alertDate.getFullYear(), alertDate.getMonth(), alertDate.getDate(), 0, 0, 0));
-      const endOfDay = new Date(Date.UTC(alertDate.getFullYear(), alertDate.getMonth(), alertDate.getDate(), 23, 59, 59, 999));
-      
+      // Check if the exact alert (title, source, published_at) already exists
       const { data: existingAlerts, error: selectError } = await supabase
         .from('disaster_alerts')
-        .select('id, title, published_at')
+        .select('id')
         .eq('title', alert.title.trim())
         .eq('source', alert.source)
-        .gte('published_at', startOfDay.toISOString())
-        .lt('published_at', endOfDay.toISOString());
-      
+        .eq('published_at', alert.published_at); // Exact timestamp match
+
       if (selectError) {
         console.error('Error checking for existing alert:', selectError);
         continue;
       }
       
-      // If alert doesn't exist in database for this day, insert it
+      // If alert doesn't exist, insert it
       if (!existingAlerts || existingAlerts.length === 0) {
         console.log('Attempting to insert alert:', alert.title);
         console.log('Database connection:', config.supabaseUrl);
@@ -691,7 +685,6 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-12T13:30:00+08:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31125-kanlaon-volcano-advisory-12-may-2025-1-30-pm',
       severity: 'medium',
-      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PHIVOLCS',
@@ -702,7 +695,6 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-13T04:30:00+08:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31145-kanlaon-volcano-eruption-bulletin-13-may-2025-04-30-am',
       severity: 'high',
-      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PHIVOLCS',
@@ -712,8 +704,7 @@ async function getSampleAlerts() {
       region: 'CALABARZON',
       published_at: new Date('2025-05-27T00:00:00+08:00'),
       link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-hazard/volcano-bulletin2/taal-volcano',
-      severity: 'low',
-      // Not using display_date field as it's causing schema issues
+      severity: 'medium', // Changed from low
     },
     
     // Rainfall and Weather Advisories
@@ -726,7 +717,6 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-28T05:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/regional-forecast/visprsd',
       severity: 'medium',
-      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -736,8 +726,7 @@ async function getSampleAlerts() {
       region: 'Southern Luzon',
       published_at: new Date('2025-05-28T14:00:00+08:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/southern-luzon',
-      severity: 'low',
-      // Not using display_date field as it's causing schema issues
+      severity: 'medium', // Changed from low
     },
     {
       source: 'PAGASA',
@@ -748,29 +737,26 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-23T00:00:00+08:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/weather/weather-outlook-weekly',
       severity: 'medium',
-      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
       title: 'Daily Rainfall and Temperature Report',
       description: 'Temperature and rainfall levels within normal range. No extreme anomalies recorded.',
-      category: 'climate',
+      category: 'weather', // Changed from climate
       region: 'Nationwide',
       published_at: new Date('2025-05-27T08:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/climate/climate-monitoring',
-      severity: 'low',
-      // Not using display_date field as it's causing schema issues
+      severity: 'medium', // Changed from low
     },
     {
       source: 'PAGASA',
       title: 'Seasonal Climate Outlook',
       description: 'Near-normal to above-normal rainfall conditions expected from June to August in most parts of the country.',
-      category: 'climate',
+      category: 'weather', // Changed from climate
       region: 'Nationwide',
       published_at: new Date('2025-05-29T00:00:00+08:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/climate/climate-prediction/seasonal-forecast',
       severity: 'medium',
-      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -781,7 +767,6 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-28T02:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/regional-forecast/ncrprsd',
       severity: 'medium',
-      // Not using display_date field as it's causing schema issues
     },
     {
       source: 'PAGASA',
@@ -792,7 +777,6 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-23T05:00:00+08:00'),
       link: 'https://pubfiles.pagasa.dost.gov.ph/tamss/weather/advisory.pdf',
       severity: 'high',
-      // Not using display_date field as it's causing schema issues
     },
     
     // Typhoon and Cyclone Advisories
@@ -804,8 +788,7 @@ async function getSampleAlerts() {
       region: 'Nationwide',
       published_at: new Date('2025-05-30T00:00:00+08:00'),
       link: 'https://pubfiles.pagasa.dost.gov.ph/pagasaweb/files/climate/tcthreat/TC_Threat_and_S2S_Forecast.pdf',
-      severity: 'low',
-      // Not using display_date field as it's causing schema issues
+      severity: 'medium', // Changed from low
     },
     
     // Flood Advisories
@@ -818,7 +801,6 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-28T08:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/flood',
       severity: 'medium',
-      // Not using display_date field as it's causing schema issues
     },
     
     // Earthquake Advisories
@@ -830,8 +812,7 @@ async function getSampleAlerts() {
       region: 'Davao Region',
       published_at: new Date('2025-05-25T13:21:00+08:00'),
       link: 'https://earthquake.phivolcs.dost.gov.ph/2025_Earthquake_Information/May/2025_0525_0521_B1.html',
-      severity: 'low',
-      // Not using display_date field as it's causing schema issues
+      severity: 'medium', // Changed from low
     },
     
     // Landslide Advisories
@@ -844,7 +825,6 @@ async function getSampleAlerts() {
       published_at: new Date('2025-05-30T05:00:00+08:00'),
       link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/nlprsd',
       severity: 'medium',
-      // Not using display_date field as it's causing schema issues
     },
     
     // General Weather Forecasts
@@ -856,8 +836,7 @@ async function getSampleAlerts() {
       region: 'Nationwide',
       published_at: new Date('2025-05-30T00:00:00+08:00'),
       link: 'https://www.pagasa.dost.gov.ph/weather/weather-outlook-selected-philippine-cities',
-      severity: 'low',
-      // Not using display_date field as it's causing schema issues
+      severity: 'medium', // Changed from low
     }
   ];
 }
@@ -891,29 +870,45 @@ async function runScraper() {
     
     let alerts = [];
     
-    // Check if we should use sample alerts
+    // Check if we should use sample alerts (config override)
     if (config.useSampleAlerts) {
-      await logScraperStatus('running', 'Using sample alerts instead of scraping...');
+      await logScraperStatus('running', 'Using sample alerts (config override)...');
       alerts = await getSampleAlerts();
     } else {
-      // Scrape PAGASA
-      await logScraperStatus('running', 'Scraping PAGASA...');
+      // Attempt live scraping
+      await logScraperStatus('running', 'Attempting to scrape PAGASA...');
       const pagasaAlerts = await scrapePAGASA();
       
-      // Scrape PHIVOLCS
-      await logScraperStatus('running', 'Scraping PHIVOLCS...');
+      await logScraperStatus('running', 'Attempting to scrape PHIVOLCS...');
       const phivolcsAlerts = await scrapePHIVOLCS();
       
-      // Combine alerts from all sources
-      alerts = [...pagasaAlerts, ...phivolcsAlerts];
-      await logScraperStatus('running', `Found ${alerts.length} total alerts from all sources`);
+      // Combine alerts from live scraping
+      let liveAlerts = [...pagasaAlerts, ...phivolcsAlerts];
+      
+      if (liveAlerts.length > 0) {
+        alerts = liveAlerts;
+        await logScraperStatus('running', `Successfully found ${alerts.length} total alerts from live sources.`);
+      } else {
+        await logScraperStatus('running', 'Live scraping yielded 0 alerts. Falling back to sample alerts.'); // Changed 'warning' to 'running'
+        alerts = await getSampleAlerts();
+        if (alerts.length > 0) {
+          await logScraperStatus('running', `Using ${alerts.length} sample alerts as fallback.`);
+        } else {
+          // This case means both live and sample alerts are empty.
+          await logScraperStatus('error', 'Fallback to sample alerts also yielded 0 alerts. No data will be stored.'); // Changed 'warning' to 'error'
+        }
+      }
     }
     
-    // Store alerts in Supabase
-    await logScraperStatus('running', 'Storing alerts in database...');
-    await storeAlerts(alerts);
+    // Store alerts in Supabase (only if alerts exist)
+    if (alerts.length > 0) {
+      await logScraperStatus('running', 'Storing alerts in database...');
+      await storeAlerts(alerts);
+      await logScraperStatus('completed', 'Scraper completed. Alerts processed and stored.');
+    } else {
+      await logScraperStatus('completed', 'Scraper completed. No alerts (live or sample) found to store.');
+    }
     
-    await logScraperStatus('completed', 'Scraper completed successfully!');
   } catch (error) {
     console.error('Error running scraper:', error);
     await logScraperStatus('error', `Error running scraper: ${error.message}`);
