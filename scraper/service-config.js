@@ -11,8 +11,11 @@ module.exports = {
   
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
   useSampleAlerts: false, // Actually scrape websites instead of using sample data
+  openweathermapApiKey: '857a0747fc5b2aa707a97ab161d128e6', // Added OpenWeatherMap API Key
   sources: {
-    pagasa: 'https://www.pagasa.dost.gov.ph/',
-    phivolcs: 'https://www.phivolcs.dost.gov.ph/'
+    pagasa: 'https://www.pagasa.dost.gov.ph/', // For PAGASA specific bulletins (typhoons, floods)
+    phivolcs: 'https://www.phivolcs.dost.gov.ph/', // For PHIVOLCS specific bulletins (volcanoes)
+    usgsApi: 'https://earthquake.usgs.gov/fdsnws/event/1/query', // USGS Earthquake API
+    openWeatherMapApi: 'https://api.openweathermap.org/data/2.5/' // Base URL for OpenWeatherMap
   }
 };

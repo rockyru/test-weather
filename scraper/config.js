@@ -11,10 +11,11 @@ module.exports = {
   supabaseUrl: process.env.REACT_APP_SUPABASE_URL || 'https://lgqfdbygspzkcrvybcwc.supabase.co',
   supabaseKey: process.env.REACT_APP_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxncWZkYnlnc3B6a2NydnliY3djIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1MzkxMzksImV4cCI6MjA2NDExNTEzOX0.C6avhDS3ZfSbMZdSp40-NhODKeqLb2oee6_y7Y2DMTY',
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
+  openweathermapApiKey: '857a0747fc5b2aa707a97ab161d128e6',
   sources: {
-    pagasa: 'https://www.pagasa.dost.gov.ph/',
-    pagasaApi: 'https://api.pagasa.dost.gov.ph/v1/bulletins', // Hypothetical API endpoint
-    phivolcs: 'https://www.phivolcs.dost.gov.ph/',
-    phivolcsApi: 'https://api.phivolcs.dost.gov.ph/v1/events' // Hypothetical API endpoint
+    pagasa: 'https://www.pagasa.dost.gov.ph/', // For PAGASA specific bulletins (typhoons, floods)
+    phivolcs: 'https://www.phivolcs.dost.gov.ph/', // For PHIVOLCS specific bulletins (volcanoes)
+    usgsApi: 'https://earthquake.usgs.gov/fdsnws/event/1/query', // USGS Earthquake API
+    openWeatherMapApi: 'https://api.openweathermap.org/data/2.5/' // Base URL for OpenWeatherMap
   }
 };

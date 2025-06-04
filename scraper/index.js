@@ -38,67 +38,14 @@ console.log(`Scraper initialized with Supabase URL: ${config.supabaseUrl}`);
 console.log(`Scraper will run every ${config.scrapingInterval / (60 * 1000)} minutes`);
 console.log('Enhanced scraper: Capturing all risk levels but excluding alerts with insufficient information');
 
-// Function to parse PAGASA API response (hypothetical structure)
-function parsePAGASAApiResponse(apiData) {
-  const alerts = [];
-  if (apiData && Array.isArray(apiData.bulletins)) {
-    apiData.bulletins.forEach(item => {
-      const title = item.title || 'PAGASA Bulletin';
-      const description = item.description || item.summary || '';
-      const link = item.link || (item.id ? `https://www.pagasa.dost.gov.ph/bulletin/${item.id}` : null);
-      const publishedAt = item.published_at ? new Date(item.published_at) : new Date();
-      const category = determineCategory(title, description); // Reuse existing helper
-      const region = item.area_affected ? item.area_affected.join(', ') : extractRegionFromText(description);
-      const severity = item.severity_level ? item.severity_level.toLowerCase() : determineSeverity(title, description);
-
-      if (description) { // Ensure there's a description
-        alerts.push({
-          source: 'PAGASA API',
-          title,
-          description,
-          category,
-          region,
-          published_at: publishedAt,
-          link,
-          severity
-        });
-      }
-    });
-  }
-  return alerts;
-}
-
-// Function to scrape PAGASA website (with API fallback)
+// Function to scrape PAGASA website (HTML Only)
 async function scrapePAGASA() {
-  let alerts = [];
-
-  // Try PAGASA API first
-  if (config.sources.pagasaApi) {
-    try {
-      console.log('Attempting to fetch data from PAGASA API...');
-      const apiResponse = await axiosInstance.get(config.sources.pagasaApi);
-      if (apiResponse.data) {
-        alerts = parsePAGASAApiResponse(apiResponse.data);
-        if (alerts.length > 0) {
-          console.log(`Successfully fetched ${alerts.length} alerts from PAGASA API.`);
-          return alerts; // Return API alerts if successful
-        } else {
-          console.log('PAGASA API returned no usable alerts. Falling back to HTML scraping.');
-        }
-      } else {
-        console.log('PAGASA API did not return data. Falling back to HTML scraping.');
-      }
-    } catch (apiError) {
-      console.error('Error fetching from PAGASA API:', apiError.message, '- Falling back to HTML scraping.');
-    }
-  }
-
-  // Fallback to HTML scraping if API fails or returns no data
+  const alerts = [];
   try {
-    console.log('Scraping PAGASA HTML website...');
+    console.log('Scraping PAGASA HTML website for specific bulletins...');
     const response = await axiosInstance.get(config.sources.pagasa);
     const $ = cheerio.load(response.data);
-    // Keep existing HTML scraping logic here
+
     // Extract typhoon warnings
     $('.typhoon-bulletin').each((i, el) => {
       const title = $(el).find('h3').text().trim();
@@ -107,13 +54,13 @@ async function scrapePAGASA() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PAGASA HTML', // Indicate source
+        source: 'PAGASA',
         title,
         description,
         category: 'typhoon',
         region: extractRegionFromText(description),
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.pagasa.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.pagasa).href : null,
         severity: determineSeverity(title, description)
       });
     });
@@ -126,13 +73,13 @@ async function scrapePAGASA() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PAGASA HTML', // Indicate source
+        source: 'PAGASA',
         title,
         description,
         category: 'flood',
         region: extractRegionFromText(description),
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.pagasa.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.pagasa).href : null,
         severity: determineSeverity(title, description)
       });
     });
@@ -145,13 +92,13 @@ async function scrapePAGASA() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PAGASA HTML', // Indicate source
+        source: 'PAGASA',
         title,
         description,
         category: determineCategory(title, description),
         region: extractRegionFromText(description),
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.pagasa.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.pagasa).href : null,
         severity: determineSeverity(title, description)
       });
     });
@@ -163,23 +110,22 @@ async function scrapePAGASA() {
       const link = $(el).find('a').attr('href');
       const publishedAt = new Date();
       
-      // Skip if this is empty
       if (!description) return;
       
       alerts.push({
-        source: 'PAGASA HTML', // Indicate source
+        source: 'PAGASA',
         title,
         description,
         category: determineCategory(title, description),
         region: extractRegionFromText(description),
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.pagasa.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.pagasa).href : null,
         severity: determineSeverity(title, description)
       });
     });
     
     // Extract regional forecasts for all weather conditions with sufficient information
-    const forecastTitles = new Set(); // Keep this local to HTML scraping part
+    const forecastTitles = new Set();
     
     $('.forecast, .regional-forecast, .daily-forecast').each((i, el) => {
       const title = $(el).find('h3, h4, .title').text().trim() || 'Regional Weather Forecast';
@@ -188,13 +134,13 @@ async function scrapePAGASA() {
       const publishedAt = new Date();
       
       if (!description || description.length < 15) {
-        console.log(`Skipping HTML forecast with insufficient information: ${title}`);
+        console.log(`Skipping PAGASA forecast with insufficient information: ${title}`);
         return;
       }
       
       const forecastKey = `${title}-${description.substring(0, 50)}`;
       if (forecastTitles.has(forecastKey)) {
-        console.log(`Skipping duplicate HTML forecast: ${title}`);
+        console.log(`Skipping duplicate PAGASA forecast: ${title}`);
         return;
       }
       forecastTitles.add(forecastKey);
@@ -202,13 +148,13 @@ async function scrapePAGASA() {
       const severity = determineSeverity(title, description);
       
       alerts.push({
-        source: 'PAGASA HTML', // Indicate source
+        source: 'PAGASA',
         title,
         description,
-        category: 'weather',
+        category: 'weather', // This might be general, specific PAGASA forecasts
         region: extractRegionFromText(description) || 'Nationwide',
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.pagasa.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.pagasa).href : null,
         severity: severity
       });
     });
@@ -216,60 +162,22 @@ async function scrapePAGASA() {
     if (alerts.length > 0) {
         console.log(`Successfully scraped ${alerts.length} alerts from PAGASA HTML.`);
     } else {
-        console.log('PAGASA HTML scraping yielded no alerts.');
+        console.log('PAGASA HTML scraping yielded no specific bulletins.');
     }
     return alerts;
   } catch (error) {
-    console.error('Error scraping PAGASA HTML:', error);
-    // If API also failed, and HTML scraping fails, return empty array
-    return alerts.length > 0 ? alerts : [];
+    console.error('Error scraping PAGASA HTML for specific bulletins:', error);
+    return [];
   }
 }
 
-// Function to parse PHIVOLCS API response (hypothetical structure)
-function parsePHIVOLCSApiResponse(apiData) {
-  const alerts = [];
-  if (apiData && Array.isArray(apiData.events)) {
-    apiData.events.forEach(event => {
-      const title = event.title || (event.type === 'earthquake' ? 'PHIVOLCS Earthquake Event' : 'PHIVOLCS Volcano Event');
-      const description = event.description || event.details || '';
-      const link = event.link || (event.id ? `https://www.phivolcs.dost.gov.ph/event/${event.id}` : null);
-      const publishedAt = event.timestamp ? new Date(event.timestamp) : new Date();
-      const category = event.type === 'earthquake' ? 'earthquake' : (event.type === 'volcano' ? 'volcano' : determineCategory(title, description));
-      const region = event.location || extractRegionFromText(description);
-      let severity;
-      if (category === 'earthquake') {
-        severity = event.magnitude ? determineEarthquakeSeverity(`Magnitude ${event.magnitude}`) : determineEarthquakeSeverity(description);
-      } else if (category === 'volcano') {
-        severity = event.alert_level ? determineVolcanoSeverity(`Alert Level ${event.alert_level}`, description) : determineVolcanoSeverity(title, description);
-      } else {
-        severity = determineSeverity(title, description);
-      }
-
-      if (description) { // Ensure there's a description
-        alerts.push({
-          source: 'PHIVOLCS API',
-          title,
-          description,
-          category,
-          region,
-          published_at: publishedAt,
-          link,
-          severity
-        });
-      }
-    });
-  }
-  return alerts;
-}
-
-// Helper function to retry API requests (used for HTML scraping fallback)
-async function retryRequest(url, maxRetries = 5) { // Increased retries to 5
+// Helper function to retry API requests (used for PHIVOLCS HTML scraping fallback)
+async function retryRequest(url, maxRetries = 5) {
   let lastError;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       if (attempt > 0) {
-        const delayMs = 2000 * Math.pow(2, attempt - 1); // Exponential backoff
+        const delayMs = 2000 * Math.pow(2, attempt - 1);
         console.log(`Retry attempt ${attempt + 1}/${maxRetries} for ${url} after ${delayMs}ms delay`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
@@ -285,7 +193,7 @@ async function retryRequest(url, maxRetries = 5) { // Increased retries to 5
         });
       } else {
         return await axiosInstance.get(url, {
-          timeout: 20000 // 20 seconds timeout on later attempts
+          timeout: 20000
         });
       }
     } catch (error) {
@@ -296,47 +204,24 @@ async function retryRequest(url, maxRetries = 5) { // Increased retries to 5
   throw lastError;
 }
 
+// Function to scrape PHIVOLCS website (HTML Only)
 async function scrapePHIVOLCS() {
   let alerts = [];
-
-  // Try PHIVOLCS API first
-  if (config.sources.phivolcsApi) {
-    try {
-      console.log('Attempting to fetch data from PHIVOLCS API...');
-      const apiResponse = await axiosInstance.get(config.sources.phivolcsApi);
-      if (apiResponse.data) {
-        alerts = parsePHIVOLCSApiResponse(apiResponse.data);
-        if (alerts.length > 0) {
-          console.log(`Successfully fetched ${alerts.length} alerts from PHIVOLCS API.`);
-          return alerts; // Return API alerts if successful
-        } else {
-          console.log('PHIVOLCS API returned no usable alerts. Falling back to HTML scraping.');
-        }
-      } else {
-        console.log('PHIVOLCS API did not return data. Falling back to HTML scraping.');
-      }
-    } catch (apiError) {
-      console.error('Error fetching from PHIVOLCS API:', apiError.message, '- Falling back to HTML scraping.');
-    }
-  }
-
-  // Fallback to HTML scraping
   try {
-    console.log('Scraping PHIVOLCS HTML website...');
+    console.log('Scraping PHIVOLCS HTML website for specific bulletins...');
     const phivolcsEndpoints = [
       config.sources.phivolcs,
       'https://earthquake.phivolcs.dost.gov.ph/',
       'https://www.phivolcs.dost.gov.ph/index.php/earthquake/earthquake-information'
+      // Note: The earthquake info page might be redundant if USGS API is primary for quakes
     ];
     
     let response = null;
-    // let successfulEndpoint = null; // Not strictly needed if we just process the first success
     
     for (const endpoint of phivolcsEndpoints) {
       try {
         console.log(`Trying PHIVOLCS HTML endpoint: ${endpoint}`);
-        response = await retryRequest(endpoint); // Uses the existing retry logic
-        // successfulEndpoint = endpoint;
+        response = await retryRequest(endpoint);
         console.log(`Successfully connected to PHIVOLCS HTML at: ${endpoint}`);
         break;
       } catch (error) {
@@ -346,25 +231,24 @@ async function scrapePHIVOLCS() {
     
     if (!response) {
       console.error('All PHIVOLCS HTML endpoints failed.');
-      // If API also failed, and HTML scraping fails, return empty or placeholder
-      return alerts.length > 0 ? alerts : [{
+      return [{ // Placeholder if all HTML attempts fail
         source: 'PHIVOLCS System',
-        title: 'PHIVOLCS Unavailable',
-        description: 'Unable to connect to PHIVOLCS API or website. Please check sources directly.',
+        title: 'PHIVOLCS Bulletins Unavailable',
+        description: 'Unable to connect to PHIVOLCS website for specific bulletins. Volcano data might be missing.',
         category: 'system',
         region: 'Philippines',
         published_at: new Date(),
-        link: 'https://www.phivolcs.dost.gov.ph/',
-        severity: 'medium' // Or 'low', depending on desired behavior for system errors
+        link: config.sources.phivolcs,
+        severity: 'medium'
       }];
     }
     
     const $ = cheerio.load(response.data);
-    // Clear alerts array if API call was attempted but failed to populate it, to avoid mixing.
-    // Or, decide if you want to merge. For now, HTML scraping will overwrite if API failed.
     alerts = [];
 
-    // Extract earthquake bulletins
+    // Extract earthquake bulletins (Primarily for non-USGS covered or specific PHIVOLCS reports)
+    // Consider if this is still needed if USGS is the primary earthquake source.
+    // For now, keeping it for any PHIVOLCS specific earthquake bulletins.
     $('.earthquake-bulletin').each((i, el) => {
       const title = $(el).find('h3').text().trim();
       const description = $(el).find('.bulletin-content').text().trim();
@@ -372,13 +256,13 @@ async function scrapePHIVOLCS() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PHIVOLCS HTML', // Indicate source
+        source: 'PHIVOLCS',
         title,
         description,
-        category: 'earthquake',
+        category: 'earthquake', // Could be PHIVOLCS specific quake report
         region: extractRegionFromText(description),
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.phivolcs.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.phivolcs).href : null,
         severity: determineEarthquakeSeverity(description)
       });
     });
@@ -391,13 +275,13 @@ async function scrapePHIVOLCS() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PHIVOLCS HTML', // Indicate source
+        source: 'PHIVOLCS',
         title,
         description,
         category: 'volcano',
         region: extractRegionFromText(description),
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.phivolcs.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.phivolcs).href : null,
         severity: determineVolcanoSeverity(title, description)
       });
     });
@@ -412,18 +296,19 @@ async function scrapePHIVOLCS() {
       if (!description) return;
       
       alerts.push({
-        source: 'PHIVOLCS HTML', // Indicate source
+        source: 'PHIVOLCS',
         title,
         description,
         category: 'volcano',
         region: extractRegionFromText(description),
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.phivolcs.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.phivolcs).href : null,
         severity: determineVolcanoSeverity(title, description)
       });
     });
     
-    // Extract all earthquake information
+    // Extract all earthquake information (minor ones, or PHIVOLCS specific)
+    // Again, consider redundancy with USGS.
     $('.earthquake-info, .seismic-activity, .quake-report').each((i, el) => {
       const title = $(el).find('h3, h4, .title').text().trim() || 'Earthquake Activity';
       const description = $(el).find('.content, .description, p').text().trim();
@@ -433,13 +318,13 @@ async function scrapePHIVOLCS() {
       if (!description) return;
       
       alerts.push({
-        source: 'PHIVOLCS HTML', // Indicate source
+        source: 'PHIVOLCS',
         title,
         description,
         category: 'earthquake',
         region: extractRegionFromText(description),
         published_at: publishedAt,
-        link: link ? new URL(link, 'https://www.phivolcs.dost.gov.ph/').href : null,
+        link: link ? new URL(link, config.sources.phivolcs).href : null,
         severity: determineEarthquakeSeverity(description)
       });
     });
@@ -447,24 +332,181 @@ async function scrapePHIVOLCS() {
     if (alerts.length > 0) {
         console.log(`Successfully scraped ${alerts.length} alerts from PHIVOLCS HTML.`);
     } else {
-        console.log('PHIVOLCS HTML scraping yielded no alerts.');
+        console.log('PHIVOLCS HTML scraping yielded no specific bulletins.');
     }
     return alerts;
   } catch (error) {
-    console.error('Error scraping PHIVOLCS HTML:', error);
-    // If API also failed, and HTML scraping fails, return empty array or the placeholder from above
-    return alerts.length > 0 ? alerts : [{
+    console.error('Error scraping PHIVOLCS HTML for specific bulletins:', error);
+    return [{ // Fallback if all else fails in this function
         source: 'PHIVOLCS System',
-        title: 'PHIVOLCS Unavailable',
-        description: 'Unable to connect to PHIVOLCS API or website. Please check sources directly.',
+        title: 'PHIVOLCS Bulletins Error',
+        description: 'An error occurred while scraping PHIVOLCS website for specific bulletins.',
         category: 'system',
         region: 'Philippines',
         published_at: new Date(),
-        link: 'https://www.phivolcs.dost.gov.ph/',
+        link: config.sources.phivolcs,
         severity: 'medium'
       }];
   }
 }
+
+// Function to scrape USGS Earthquake API
+async function scrapeUSGSEarthquakes() {
+  const alerts = [];
+  try {
+    console.log('Scraping USGS Earthquake API...');
+    // Get earthquakes from the last 24 hours, magnitude 2.5+ in the Philippines region
+    // Philippines bounding box: approx 4.0,116.0 to 21.5,127.0 (lat,lon)
+    // minlatitude, minlongitude, maxlatitude, maxlongitude
+    const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // Last 24 hours
+    if (!config.sources || !config.sources.usgsApi) {
+      console.error('USGS API URL not configured in config.sources.usgsApi. Skipping USGS scrape.');
+      throw new Error('USGS API URL not configured.'); // Throw error to be caught by catch block
+    }
+    const usgsUrl = `${config.sources.usgsApi}?format=geojson&starttime=${startTime}&minmagnitude=2.5&minlatitude=4.0&minlongitude=116.0&maxlatitude=21.5&maxlongitude=127.0&eventtype=earthquake&orderby=time`;
+    
+    const response = await axiosInstance.get(usgsUrl);
+    const data = response.data;
+
+    if (data && data.features) {
+      data.features.forEach(event => {
+        const props = event.properties;
+        const mag = props.mag;
+        const place = props.place || 'Unknown location';
+        const time = new Date(props.time);
+        const url = props.url;
+        const depth = event.geometry.coordinates[2]; // Depth in km
+
+        // More detailed description
+        let description = `Magnitude ${mag} earthquake reported ${place}. Depth: ${depth} km.`;
+        if (props.tsunami) {
+          description += ' Tsunami warning issued.';
+        }
+        if (props.felt) {
+          description += ` Reported felt by ${props.felt} people.`;
+        }
+        
+        alerts.push({
+          source: 'USGS API',
+          title: `M ${mag} Earthquake - ${place}`,
+          description: description,
+          category: 'earthquake',
+          region: extractRegionFromText(place) || 'Philippines', // Attempt to extract more specific region
+          published_at: time,
+          link: url,
+          severity: determineEarthquakeSeverity(`Magnitude ${mag} ${description}`) // Pass more info for severity
+        });
+      });
+      console.log(`Successfully fetched ${alerts.length} earthquake alerts from USGS API.`);
+    } else {
+      console.log('No earthquake data found from USGS API for the specified parameters.');
+    }
+  } catch (error) {
+    console.error('Error scraping USGS Earthquake API:', error.message);
+    // Optionally, return a system alert if the API fails
+    alerts.push({
+        source: 'USGS API System',
+        title: 'USGS Earthquake API Unavailable',
+        description: `Failed to fetch data from USGS Earthquake API: ${error.message}`,
+        category: 'system',
+        region: 'Global/Philippines',
+        published_at: new Date(),
+        link: config.sources.usgsApi,
+        severity: 'medium'
+    });
+  }
+  return alerts;
+}
+
+// Function to scrape OpenWeatherMap API for general weather
+async function scrapeOpenWeatherMap() {
+  const alerts = [];
+  // Correctly check for the API key at the root of config, and the URL under config.sources
+  if (!config.openweathermapApiKey || !config.sources || !config.sources.openWeatherMapApi) {
+    console.warn('OpenWeatherMap API key or base URL not configured correctly. Skipping OpenWeatherMap.');
+    // Add a system alert to indicate configuration issue
+    alerts.push({
+        source: 'OpenWeatherMap System',
+        title: 'OpenWeatherMap Configuration Error',
+        description: 'OpenWeatherMap API key or base URL is missing in the configuration.',
+        category: 'system',
+        region: 'System',
+        published_at: new Date(),
+        link: null,
+        severity: 'medium'
+      });
+    return alerts;
+  }
+
+  // Define target cities in the Philippines with their coordinates
+  // Manila: 14.5995, 120.9842
+  // Cebu City: 10.3157, 123.8854
+  // Davao City: 7.1907, 125.4553
+  const cities = [
+    { name: 'Metro Manila', lat: 14.5995, lon: 120.9842 },
+    { name: 'Cebu City', lat: 10.3157, lon: 123.8854 },
+    { name: 'Davao City', lat: 7.1907, lon: 125.4553 },
+    // Add more major cities/regions if needed
+  ];
+
+  console.log('Scraping OpenWeatherMap API for general weather...');
+
+  for (const city of cities) {
+    try {
+      // Using One Call API 3.0 (requires subscription, but free tier allows some calls)
+      // If using older free tier, might need /weather endpoint
+      // For simplicity, let's assume /weather endpoint for current weather.
+      // For forecast, you'd use /forecast
+      const weatherUrl = `${config.sources.openWeatherMapApi}weather?lat=${city.lat}&lon=${city.lon}&appid=${config.openweathermapApiKey}&units=metric`;
+      
+      const response = await axiosInstance.get(weatherUrl);
+      const data = response.data;
+
+      if (data && data.weather && data.main) {
+        const weatherDesc = data.weather[0].description;
+        const temp = data.main.temp;
+        const feelsLike = data.main.feels_like;
+        const humidity = data.main.humidity;
+        const windSpeed = data.wind.speed;
+        
+        const title = `Weather in ${city.name}: ${weatherDesc}`;
+        const description = `Current temperature: ${temp}°C (feels like ${feelsLike}°C). Humidity: ${humidity}%. Wind: ${windSpeed} m/s. ${data.weather[0].main}.`;
+        const publishedAt = data.dt ? new Date(data.dt * 1000) : new Date(); // dt is UTC timestamp
+
+        alerts.push({
+          source: 'OpenWeatherMap API',
+          title: title,
+          description: description,
+          category: 'weather',
+          region: city.name,
+          published_at: publishedAt,
+          link: `https://openweathermap.org/city/${data.id}`, // Link to city page if available
+          severity: determineSeverity(title, description) // General severity based on description
+        });
+      } else {
+        console.warn(`No valid weather data from OpenWeatherMap for ${city.name}. Response:`, data);
+      }
+    } catch (error) {
+      console.error(`Error scraping OpenWeatherMap for ${city.name}:`, error.message);
+      // Optionally, add a system alert for this specific city failure
+       alerts.push({
+        source: 'OpenWeatherMap System',
+        title: `OpenWeatherMap API Error for ${city.name}`,
+        description: `Failed to fetch weather data for ${city.name}: ${error.message}`,
+        category: 'system',
+        region: city.name,
+        published_at: new Date(),
+        link: config.sources.openWeatherMapApi,
+        severity: 'low'
+      });
+    }
+  }
+  if (alerts.filter(a => a.source === 'OpenWeatherMap API').length > 0) {
+    console.log(`Successfully fetched ${alerts.filter(a => a.source === 'OpenWeatherMap API').length} weather updates from OpenWeatherMap API.`);
+  }
+  return alerts;
+}
+
 
 // Helper function to extract region from text
 function extractRegionFromText(text) {
@@ -857,41 +899,93 @@ async function deleteOldScraperLogs() {
 // Function to run the scraper
 async function runScraper() {
   try {
-    // Delete old scraper logs
     await deleteOldScraperLogs();
+    await logScraperStatus('starting', 'Starting disaster alert scraper run...');
     
-    await logScraperStatus('starting', 'Starting disaster alert scraper...');
+    let allAlerts = [];
     
-    let alerts = [];
-    
-    // Attempt live scraping
-    await logScraperStatus('running', 'Attempting to scrape PAGASA...');
+    // Scrape PAGASA HTML for specific bulletins
+    await logScraperStatus('running', 'Attempting to scrape PAGASA HTML for bulletins...');
     const pagasaAlerts = await scrapePAGASA();
-    
-    await logScraperStatus('running', 'Attempting to scrape PHIVOLCS...');
-    const phivolcsAlerts = await scrapePHIVOLCS();
-    
-    // Combine alerts from live scraping
-    alerts = [...pagasaAlerts, ...phivolcsAlerts];
-    
-    if (alerts.length > 0) {
-      await logScraperStatus('running', `Successfully found ${alerts.length} total alerts from live sources.`);
+    if (pagasaAlerts.length > 0) {
+      await logScraperStatus('running', `PAGASA HTML: Found ${pagasaAlerts.length} alerts.`);
+      allAlerts = allAlerts.concat(pagasaAlerts);
     } else {
-      await logScraperStatus('running', 'Live scraping yielded 0 alerts. No data will be stored.');
+      await logScraperStatus('running', 'PAGASA HTML: No specific bulletins found.');
+    }
+
+    // Scrape PHIVOLCS HTML for specific bulletins (mainly volcano)
+    await logScraperStatus('running', 'Attempting to scrape PHIVOLCS HTML for bulletins...');
+    const phivolcsAlerts = await scrapePHIVOLCS();
+     if (phivolcsAlerts.length > 0) {
+      await logScraperStatus('running', `PHIVOLCS HTML: Found ${phivolcsAlerts.length} alerts.`);
+      allAlerts = allAlerts.concat(phivolcsAlerts);
+    } else {
+      await logScraperStatus('running', 'PHIVOLCS HTML: No specific bulletins found.');
+    }
+
+    // Scrape USGS API for earthquakes
+    await logScraperStatus('running', 'Attempting to fetch earthquake data from USGS API...');
+    const usgsEarthquakeAlerts = await scrapeUSGSEarthquakes();
+    if (usgsEarthquakeAlerts.length > 0) {
+      // Filter out system alerts from USGS before counting actual earthquake alerts
+      const actualUsgsAlerts = usgsEarthquakeAlerts.filter(a => a.source === 'USGS API');
+      if (actualUsgsAlerts.length > 0) {
+        await logScraperStatus('running', `USGS API: Found ${actualUsgsAlerts.length} earthquake alerts.`);
+      } else if (usgsEarthquakeAlerts.some(a => a.source === 'USGS API System')) {
+        // Log if only system error alerts were returned
+         await logScraperStatus('error', 'USGS API: Call resulted in a system alert/error. Check details.'); // Changed to 'error'
+      } else {
+        await logScraperStatus('running', 'USGS API: No earthquake alerts found.');
+      }
+      allAlerts = allAlerts.concat(usgsEarthquakeAlerts); // Add all, including potential system error alerts
+    } else { // Should not happen if scrapeUSGSEarthquakes always returns an array
+      await logScraperStatus('running', 'USGS API: No alerts returned (empty array).');
+    }
+
+    // Scrape OpenWeatherMap API for general weather
+    await logScraperStatus('running', 'Attempting to fetch general weather data from OpenWeatherMap API...');
+    const openWeatherMapAlerts = await scrapeOpenWeatherMap();
+    if (openWeatherMapAlerts.length > 0) {
+      // Filter out system alerts from OpenWeatherMap
+      const actualWeatherAlerts = openWeatherMapAlerts.filter(a => a.source === 'OpenWeatherMap API');
+      if (actualWeatherAlerts.length > 0) {
+         await logScraperStatus('running', `OpenWeatherMap API: Found ${actualWeatherAlerts.length} weather updates.`);
+      } else if (openWeatherMapAlerts.some(a => a.source === 'OpenWeatherMap System')) {
+        await logScraperStatus('error', 'OpenWeatherMap API: Call resulted in system alerts/errors. Check details.'); // Changed to 'error'
+      } else {
+        await logScraperStatus('running', 'OpenWeatherMap API: No weather updates found.');
+      }
+      allAlerts = allAlerts.concat(openWeatherMapAlerts); // Add all, including potential system error alerts
+    } else {
+      await logScraperStatus('running', 'OpenWeatherMap API: No weather updates returned (empty array).');
+    }
+    
+    // Log total alerts found before storage
+    if (allAlerts.length > 0) {
+      // Filter out any system error messages before final count of actual disaster/weather alerts
+      const actualDisasterAlerts = allAlerts.filter(a => !a.category || a.category !== 'system');
+      await logScraperStatus('running', `Total actual alerts from all sources before storage: ${actualDisasterAlerts.length}. (Total items including system messages: ${allAlerts.length})`);
+    } else {
+      await logScraperStatus('running', 'All sources yielded 0 items. No data will be stored.');
     }
     
     // Store alerts in Supabase (only if alerts exist)
-    if (alerts.length > 0) {
-      await logScraperStatus('running', 'Storing alerts in database...');
-      await storeAlerts(alerts);
-      await logScraperStatus('completed', 'Scraper completed. Alerts processed and stored.');
+    // Filter out system messages again before storing, unless you want to store them.
+    // For now, let's assume we only want to store actual alerts.
+    const alertsToStore = allAlerts.filter(a => !a.category || a.category !== 'system');
+
+    if (alertsToStore.length > 0) {
+      await logScraperStatus('running', `Storing ${alertsToStore.length} combined actual alerts in database...`);
+      await storeAlerts(alertsToStore); // storeAlerts already has its own logging for added/skipped
+      await logScraperStatus('completed', 'Scraper run completed. Alerts processed and stored.');
     } else {
-      await logScraperStatus('completed', 'Scraper completed. No alerts found to store.');
+      await logScraperStatus('completed', 'Scraper run completed. No new actual alerts found to store.');
     }
     
   } catch (error) {
-    console.error('Error running scraper:', error);
-    await logScraperStatus('error', `Error running scraper: ${error.message}`);
+    console.error('Error running main scraper process:', error);
+    await logScraperStatus('error', `Error in main scraper process: ${error.message}`);
   }
 }
 
@@ -899,32 +993,34 @@ async function runScraper() {
 async function initializeScraperAndScheduler() {
   const minutes = Math.floor(config.scrapingInterval / (60 * 1000));
   
-  // Log initialization status
-  await logScraperStatus('starting', `Disaster alert scraper initialized and scheduled to run every ${minutes} minutes.`);
-  console.log(`Disaster alert scraper initialized and scheduled to run every ${minutes} minutes.`);
+  await logScraperStatus('starting', `Disaster alert scraper system initialized. Scheduled to run every ${minutes} minutes.`);
+  console.log(`Disaster alert scraper system initialized. Scheduled to run every ${minutes} minutes.`);
   
-  // Schedule the scraper to run at the interval specified in config
   const scheduledTask = cron.schedule(`*/${minutes} * * * *`, () => {
-    console.log(`Running scheduled scraper at ${new Date().toISOString()}`);
+    console.log(`Running scheduled scraper task at ${new Date().toISOString()}`);
     runScraper();
   });
   
-  // Run the scraper once at startup
-  runScraper();
+  console.log('Running initial scraper task on startup...');
+  runScraper(); // Run once at startup
 }
 
 // Start the scraper
-// Only run initialization if called directly, not when imported as a module
 if (require.main === module) {
   initializeScraperAndScheduler().catch(error => {
-    console.error('Error initializing scraper:', error);
+    console.error('Fatal error initializing scraper and scheduler:', error);
+    // Attempt to log to DB if possible, though Supabase client might not be initialized
+    // For now, just console log is fine as logScraperStatus might fail here.
+    // await logScraperStatus('error', `Fatal error during initialization: ${error.message}`);
   });
 }
 
-// Export functions for Vercel API routes
+// Export functions for Vercel API routes or manual triggering
 module.exports = {
   runScraper,
-  scrapePAGASA,
-  scrapePHIVOLCS,
+  scrapePAGASA, // HTML specific bulletins
+  scrapePHIVOLCS, // HTML specific bulletins
+  scrapeUSGSEarthquakes, // USGS API
+  scrapeOpenWeatherMap, // OpenWeatherMap API
   storeAlerts
 };
