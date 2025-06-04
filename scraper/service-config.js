@@ -3,7 +3,7 @@
 require('dotenv').config({ path: '../.env' });
 
 module.exports = {
-  supabaseUrl: process.env.REACT_APP_SUPABASE_URL || 'https://lgqfdbygspzkcrvybcwc.supabase.co',
+  supabaseUrl: process.env.REACT_APP_SUPABASE_URL || 'your-supabase-url',
   
   // For the scraper, use the service role key instead of anon key
   // This will be provided through environment variables when running in GitHub Actions
