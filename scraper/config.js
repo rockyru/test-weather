@@ -13,6 +13,8 @@ module.exports = {
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
   sources: {
     pagasa: 'https://www.pagasa.dost.gov.ph/',
-    phivolcs: 'https://www.phivolcs.dost.gov.ph/'
+    pagasaApi: 'https://api.pagasa.dost.gov.ph/v1/bulletins', // Hypothetical API endpoint
+    phivolcs: 'https://www.phivolcs.dost.gov.ph/',
+    phivolcsApi: 'https://api.phivolcs.dost.gov.ph/v1/events' // Hypothetical API endpoint
   }
 };

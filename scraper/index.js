@@ -38,14 +38,67 @@ console.log(`Scraper initialized with Supabase URL: ${config.supabaseUrl}`);
 console.log(`Scraper will run every ${config.scrapingInterval / (60 * 1000)} minutes`);
 console.log('Enhanced scraper: Capturing all risk levels but excluding alerts with insufficient information');
 
-// Function to scrape PAGASA website
+// Function to parse PAGASA API response (hypothetical structure)
+function parsePAGASAApiResponse(apiData) {
+  const alerts = [];
+  if (apiData && Array.isArray(apiData.bulletins)) {
+    apiData.bulletins.forEach(item => {
+      const title = item.title || 'PAGASA Bulletin';
+      const description = item.description || item.summary || '';
+      const link = item.link || (item.id ? `https://www.pagasa.dost.gov.ph/bulletin/${item.id}` : null);
+      const publishedAt = item.published_at ? new Date(item.published_at) : new Date();
+      const category = determineCategory(title, description); // Reuse existing helper
+      const region = item.area_affected ? item.area_affected.join(', ') : extractRegionFromText(description);
+      const severity = item.severity_level ? item.severity_level.toLowerCase() : determineSeverity(title, description);
+
+      if (description) { // Ensure there's a description
+        alerts.push({
+          source: 'PAGASA API',
+          title,
+          description,
+          category,
+          region,
+          published_at: publishedAt,
+          link,
+          severity
+        });
+      }
+    });
+  }
+  return alerts;
+}
+
+// Function to scrape PAGASA website (with API fallback)
 async function scrapePAGASA() {
+  let alerts = [];
+
+  // Try PAGASA API first
+  if (config.sources.pagasaApi) {
+    try {
+      console.log('Attempting to fetch data from PAGASA API...');
+      const apiResponse = await axiosInstance.get(config.sources.pagasaApi);
+      if (apiResponse.data) {
+        alerts = parsePAGASAApiResponse(apiResponse.data);
+        if (alerts.length > 0) {
+          console.log(`Successfully fetched ${alerts.length} alerts from PAGASA API.`);
+          return alerts; // Return API alerts if successful
+        } else {
+          console.log('PAGASA API returned no usable alerts. Falling back to HTML scraping.');
+        }
+      } else {
+        console.log('PAGASA API did not return data. Falling back to HTML scraping.');
+      }
+    } catch (apiError) {
+      console.error('Error fetching from PAGASA API:', apiError.message, '- Falling back to HTML scraping.');
+    }
+  }
+
+  // Fallback to HTML scraping if API fails or returns no data
   try {
-    console.log('Scraping PAGASA...');
+    console.log('Scraping PAGASA HTML website...');
     const response = await axiosInstance.get(config.sources.pagasa);
     const $ = cheerio.load(response.data);
-    const alerts = [];
-
+    // Keep existing HTML scraping logic here
     // Extract typhoon warnings
     $('.typhoon-bulletin').each((i, el) => {
       const title = $(el).find('h3').text().trim();
@@ -54,7 +107,7 @@ async function scrapePAGASA() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PAGASA',
+        source: 'PAGASA HTML', // Indicate source
         title,
         description,
         category: 'typhoon',
@@ -73,7 +126,7 @@ async function scrapePAGASA() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PAGASA',
+        source: 'PAGASA HTML', // Indicate source
         title,
         description,
         category: 'flood',
@@ -92,7 +145,7 @@ async function scrapePAGASA() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PAGASA',
+        source: 'PAGASA HTML', // Indicate source
         title,
         description,
         category: determineCategory(title, description),
@@ -114,7 +167,7 @@ async function scrapePAGASA() {
       if (!description) return;
       
       alerts.push({
-        source: 'PAGASA',
+        source: 'PAGASA HTML', // Indicate source
         title,
         description,
         category: determineCategory(title, description),
@@ -126,8 +179,7 @@ async function scrapePAGASA() {
     });
     
     // Extract regional forecasts for all weather conditions with sufficient information
-    // Store forecast dates to avoid duplicates with different dates
-    const forecastTitles = new Set();
+    const forecastTitles = new Set(); // Keep this local to HTML scraping part
     
     $('.forecast, .regional-forecast, .daily-forecast').each((i, el) => {
       const title = $(el).find('h3, h4, .title').text().trim() || 'Regional Weather Forecast';
@@ -135,29 +187,22 @@ async function scrapePAGASA() {
       const link = $(el).find('a').attr('href');
       const publishedAt = new Date();
       
-      // Skip if description is empty or has insufficient information
       if (!description || description.length < 15) {
-        console.log(`Skipping forecast with insufficient information: ${title}`);
+        console.log(`Skipping HTML forecast with insufficient information: ${title}`);
         return;
       }
       
-      // Create a unique key for this forecast based on title and description
       const forecastKey = `${title}-${description.substring(0, 50)}`;
-      
-      // Skip if we've already seen this forecast
       if (forecastTitles.has(forecastKey)) {
-        console.log(`Skipping duplicate forecast: ${title}`);
+        console.log(`Skipping duplicate HTML forecast: ${title}`);
         return;
       }
-      
-      // Add to our set of seen forecasts
       forecastTitles.add(forecastKey);
       
-      // Determine proper severity - can be low, medium or high based on content
       const severity = determineSeverity(title, description);
       
       alerts.push({
-        source: 'PAGASA',
+        source: 'PAGASA HTML', // Indicate source
         title,
         description,
         category: 'weather',
@@ -168,31 +213,70 @@ async function scrapePAGASA() {
       });
     });
 
+    if (alerts.length > 0) {
+        console.log(`Successfully scraped ${alerts.length} alerts from PAGASA HTML.`);
+    } else {
+        console.log('PAGASA HTML scraping yielded no alerts.');
+    }
     return alerts;
   } catch (error) {
-    console.error('Error scraping PAGASA:', error);
-    return [];
+    console.error('Error scraping PAGASA HTML:', error);
+    // If API also failed, and HTML scraping fails, return empty array
+    return alerts.length > 0 ? alerts : [];
   }
 }
 
-// Function to scrape PHIVOLCS website
-// Helper function to retry API requests
+// Function to parse PHIVOLCS API response (hypothetical structure)
+function parsePHIVOLCSApiResponse(apiData) {
+  const alerts = [];
+  if (apiData && Array.isArray(apiData.events)) {
+    apiData.events.forEach(event => {
+      const title = event.title || (event.type === 'earthquake' ? 'PHIVOLCS Earthquake Event' : 'PHIVOLCS Volcano Event');
+      const description = event.description || event.details || '';
+      const link = event.link || (event.id ? `https://www.phivolcs.dost.gov.ph/event/${event.id}` : null);
+      const publishedAt = event.timestamp ? new Date(event.timestamp) : new Date();
+      const category = event.type === 'earthquake' ? 'earthquake' : (event.type === 'volcano' ? 'volcano' : determineCategory(title, description));
+      const region = event.location || extractRegionFromText(description);
+      let severity;
+      if (category === 'earthquake') {
+        severity = event.magnitude ? determineEarthquakeSeverity(`Magnitude ${event.magnitude}`) : determineEarthquakeSeverity(description);
+      } else if (category === 'volcano') {
+        severity = event.alert_level ? determineVolcanoSeverity(`Alert Level ${event.alert_level}`, description) : determineVolcanoSeverity(title, description);
+      } else {
+        severity = determineSeverity(title, description);
+      }
+
+      if (description) { // Ensure there's a description
+        alerts.push({
+          source: 'PHIVOLCS API',
+          title,
+          description,
+          category,
+          region,
+          published_at: publishedAt,
+          link,
+          severity
+        });
+      }
+    });
+  }
+  return alerts;
+}
+
+// Helper function to retry API requests (used for HTML scraping fallback)
 async function retryRequest(url, maxRetries = 5) { // Increased retries to 5
   let lastError;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // Add exponential backoff delay between retries
       if (attempt > 0) {
         const delayMs = 2000 * Math.pow(2, attempt - 1); // Exponential backoff
         console.log(`Retry attempt ${attempt + 1}/${maxRetries} for ${url} after ${delayMs}ms delay`);
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
       
-      // Try different approaches on subsequent attempts
       if (attempt === 0) {
         return await axiosInstance.get(url);
       } else if (attempt === 1) {
-        // Try with different headers on second attempt
         return await axiosInstance.get(url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
@@ -200,7 +284,6 @@ async function retryRequest(url, maxRetries = 5) { // Increased retries to 5
           }
         });
       } else {
-        // Standard attempt with increased timeout
         return await axiosInstance.get(url, {
           timeout: 20000 // 20 seconds timeout on later attempts
         });
@@ -214,10 +297,32 @@ async function retryRequest(url, maxRetries = 5) { // Increased retries to 5
 }
 
 async function scrapePHIVOLCS() {
+  let alerts = [];
+
+  // Try PHIVOLCS API first
+  if (config.sources.phivolcsApi) {
+    try {
+      console.log('Attempting to fetch data from PHIVOLCS API...');
+      const apiResponse = await axiosInstance.get(config.sources.phivolcsApi);
+      if (apiResponse.data) {
+        alerts = parsePHIVOLCSApiResponse(apiResponse.data);
+        if (alerts.length > 0) {
+          console.log(`Successfully fetched ${alerts.length} alerts from PHIVOLCS API.`);
+          return alerts; // Return API alerts if successful
+        } else {
+          console.log('PHIVOLCS API returned no usable alerts. Falling back to HTML scraping.');
+        }
+      } else {
+        console.log('PHIVOLCS API did not return data. Falling back to HTML scraping.');
+      }
+    } catch (apiError) {
+      console.error('Error fetching from PHIVOLCS API:', apiError.message, '- Falling back to HTML scraping.');
+    }
+  }
+
+  // Fallback to HTML scraping
   try {
-    console.log('Scraping PHIVOLCS...');
-    
-    // Try alternative PHIVOLCS endpoints if the main one fails
+    console.log('Scraping PHIVOLCS HTML website...');
     const phivolcsEndpoints = [
       config.sources.phivolcs,
       'https://earthquake.phivolcs.dost.gov.ph/',
@@ -225,40 +330,39 @@ async function scrapePHIVOLCS() {
     ];
     
     let response = null;
-    let successfulEndpoint = null;
+    // let successfulEndpoint = null; // Not strictly needed if we just process the first success
     
-    // Try each endpoint until one works
     for (const endpoint of phivolcsEndpoints) {
       try {
-        console.log(`Trying PHIVOLCS endpoint: ${endpoint}`);
-        response = await retryRequest(endpoint);
-        successfulEndpoint = endpoint;
-        console.log(`Successfully connected to PHIVOLCS at: ${endpoint}`);
+        console.log(`Trying PHIVOLCS HTML endpoint: ${endpoint}`);
+        response = await retryRequest(endpoint); // Uses the existing retry logic
+        // successfulEndpoint = endpoint;
+        console.log(`Successfully connected to PHIVOLCS HTML at: ${endpoint}`);
         break;
       } catch (error) {
-        console.error(`Failed to connect to PHIVOLCS at ${endpoint}: ${error.message}`);
+        console.error(`Failed to connect to PHIVOLCS HTML at ${endpoint}: ${error.message}`);
       }
     }
     
-    // If all endpoints failed, return placeholder data
     if (!response) {
-      console.error('All PHIVOLCS endpoints failed');
-      return [
-        {
-          source: 'PHIVOLCS',
-          title: 'No Current Earthquake Alerts',
-          description: 'Unable to connect to PHIVOLCS website. This is a placeholder alert.',
-          category: 'earthquake',
-          region: 'Philippines',
-          published_at: new Date(),
-          link: 'https://www.phivolcs.dost.gov.ph/',
-          severity: 'low'
-        }
-      ];
+      console.error('All PHIVOLCS HTML endpoints failed.');
+      // If API also failed, and HTML scraping fails, return empty or placeholder
+      return alerts.length > 0 ? alerts : [{
+        source: 'PHIVOLCS System',
+        title: 'PHIVOLCS Unavailable',
+        description: 'Unable to connect to PHIVOLCS API or website. Please check sources directly.',
+        category: 'system',
+        region: 'Philippines',
+        published_at: new Date(),
+        link: 'https://www.phivolcs.dost.gov.ph/',
+        severity: 'medium' // Or 'low', depending on desired behavior for system errors
+      }];
     }
     
     const $ = cheerio.load(response.data);
-    const alerts = [];
+    // Clear alerts array if API call was attempted but failed to populate it, to avoid mixing.
+    // Or, decide if you want to merge. For now, HTML scraping will overwrite if API failed.
+    alerts = [];
 
     // Extract earthquake bulletins
     $('.earthquake-bulletin').each((i, el) => {
@@ -268,7 +372,7 @@ async function scrapePHIVOLCS() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PHIVOLCS',
+        source: 'PHIVOLCS HTML', // Indicate source
         title,
         description,
         category: 'earthquake',
@@ -279,7 +383,7 @@ async function scrapePHIVOLCS() {
       });
     });
 
-    // Extract volcano updates - all alert levels including 0 and 1
+    // Extract volcano updates
     $('.volcano-advisory, .volcano-bulletin, .volcano-alert').each((i, el) => {
       const title = $(el).find('h3, h4, .title').text().trim();
       const description = $(el).find('.advisory-content, .bulletin-content, .content, p').text().trim();
@@ -287,7 +391,7 @@ async function scrapePHIVOLCS() {
       const publishedAt = new Date();
       
       alerts.push({
-        source: 'PHIVOLCS',
+        source: 'PHIVOLCS HTML', // Indicate source
         title,
         description,
         category: 'volcano',
@@ -298,18 +402,17 @@ async function scrapePHIVOLCS() {
       });
     });
     
-    // Extract all volcano alert levels (including Level 0 and Level 1)
+    // Extract all volcano alert levels
     $('.volcano-status, .alert-level, .volcano-monitoring').each((i, el) => {
       const title = $(el).find('h3, h4, .title').text().trim() || 'Volcano Status Update';
       const description = $(el).find('.content, .description, p').text().trim();
       const link = $(el).find('a').attr('href');
       const publishedAt = new Date();
       
-      // Skip if this is empty
       if (!description) return;
       
       alerts.push({
-        source: 'PHIVOLCS',
+        source: 'PHIVOLCS HTML', // Indicate source
         title,
         description,
         category: 'volcano',
@@ -320,18 +423,17 @@ async function scrapePHIVOLCS() {
       });
     });
     
-    // Extract all earthquake information (even minor ones)
+    // Extract all earthquake information
     $('.earthquake-info, .seismic-activity, .quake-report').each((i, el) => {
       const title = $(el).find('h3, h4, .title').text().trim() || 'Earthquake Activity';
       const description = $(el).find('.content, .description, p').text().trim();
       const link = $(el).find('a').attr('href');
       const publishedAt = new Date();
       
-      // Skip if this is empty
       if (!description) return;
       
       alerts.push({
-        source: 'PHIVOLCS',
+        source: 'PHIVOLCS HTML', // Indicate source
         title,
         description,
         category: 'earthquake',
@@ -341,11 +443,26 @@ async function scrapePHIVOLCS() {
         severity: determineEarthquakeSeverity(description)
       });
     });
-
+    
+    if (alerts.length > 0) {
+        console.log(`Successfully scraped ${alerts.length} alerts from PHIVOLCS HTML.`);
+    } else {
+        console.log('PHIVOLCS HTML scraping yielded no alerts.');
+    }
     return alerts;
   } catch (error) {
-    console.error('Error scraping PHIVOLCS:', error);
-    return [];
+    console.error('Error scraping PHIVOLCS HTML:', error);
+    // If API also failed, and HTML scraping fails, return empty array or the placeholder from above
+    return alerts.length > 0 ? alerts : [{
+        source: 'PHIVOLCS System',
+        title: 'PHIVOLCS Unavailable',
+        description: 'Unable to connect to PHIVOLCS API or website. Please check sources directly.',
+        category: 'system',
+        region: 'Philippines',
+        published_at: new Date(),
+        link: 'https://www.phivolcs.dost.gov.ph/',
+        severity: 'medium'
+      }];
   }
 }
 
@@ -472,21 +589,31 @@ function determineCategory(title, description) {
 function determineSeverity(title, description) {
   const lowerTitle = title.toLowerCase();
   const lowerDesc = description.toLowerCase();
-  
+
   // Check for high severity keywords
   if (lowerTitle.includes('warning') || lowerDesc.includes('warning') ||
       lowerTitle.includes('severe') || lowerDesc.includes('severe') ||
       lowerTitle.includes('danger') || lowerDesc.includes('danger') ||
       lowerTitle.includes('evacuate') || lowerDesc.includes('evacuate') ||
-      lowerTitle.includes('signal no. 3') || lowerDesc.includes('signal no. 3') ||
+      lowerTitle.includes('signal no. 5') || lowerDesc.includes('signal no. 5') ||
       lowerTitle.includes('signal no. 4') || lowerDesc.includes('signal no. 4') ||
-      lowerTitle.includes('signal no. 5') || lowerDesc.includes('signal no. 5')) {
+      lowerTitle.includes('signal no. 3') || lowerDesc.includes('signal no. 3')) {
     return 'high';
   }
+
+  // Check for medium severity keywords
+  if (lowerTitle.includes('advisory') || lowerDesc.includes('advisory') ||
+      lowerTitle.includes('watch') || lowerDesc.includes('watch') ||
+      lowerTitle.includes('signal no. 2') || lowerDesc.includes('signal no. 2') ||
+      lowerTitle.includes('signal no. 1') || lowerDesc.includes('signal no. 1') ||
+      lowerTitle.includes('moderate') || lowerDesc.includes('moderate') ||
+      (lowerTitle.includes('heavy rain') && !lowerTitle.includes('warning')) ||
+      (lowerDesc.includes('heavy rain') && !lowerDesc.includes('warning'))) {
+    return 'medium';
+  }
   
-  // All other alerts default to medium severity - we no longer use 'low' severity
-  // as per requirement to remove low risk alerts
-  return 'medium';
+  // Default to low for other general information or minor alerts
+  return 'low';
 }
 
 // Helper function to determine volcano severity from alert level
