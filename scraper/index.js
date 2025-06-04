@@ -667,180 +667,6 @@ async function storeAlerts(alerts) {
   console.log(`Alerts storage summary: ${addedCount} new alerts added, ${skippedCount} duplicates skipped (alerts with insufficient information excluded)`);
 }
 
-// Function to get sample alerts when scraping is not possible
-async function getSampleAlerts() {
-  console.log('Using sample alerts instead of scraping...');
-  
-  // Generate current date for database
-  const now = new Date();
-  
-  return [
-    // Volcano Advisories
-    {
-      source: 'PHIVOLCS',
-      title: 'Kanlaon Volcano Advisory',
-      description: 'Seventy-two volcanic earthquakes recorded beneath the northern and northwestern flanks of Kanlaon Volcano.',
-      category: 'volcano',
-      region: 'Negros Island Region',
-      published_at: new Date('2025-05-12T13:30:00+08:00'),
-      link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31125-kanlaon-volcano-advisory-12-may-2025-1-30-pm',
-      severity: 'medium',
-    },
-    {
-      source: 'PHIVOLCS',
-      title: 'Kanlaon Volcano Eruption Bulletin',
-      description: 'Moderately explosive eruption at 2:55 AM, generating a 4.5 km high plume.',
-      category: 'volcano',
-      region: 'Negros Island Region',
-      published_at: new Date('2025-05-13T04:30:00+08:00'),
-      link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-advisory-menu/31145-kanlaon-volcano-eruption-bulletin-13-may-2025-04-30-am',
-      severity: 'high',
-    },
-    {
-      source: 'PHIVOLCS',
-      title: 'Taal Volcano 24-Hour Observation Summary',
-      description: 'Taal Volcano remains under Alert Level 1. Sulfur dioxide emission measured at 1,812 tonnes/day.',
-      category: 'volcano',
-      region: 'CALABARZON',
-      published_at: new Date('2025-05-27T00:00:00+08:00'),
-      link: 'https://www.phivolcs.dost.gov.ph/index.php/volcano-hazard/volcano-bulletin2/taal-volcano',
-      severity: 'medium', // Changed from low
-    },
-    
-    // Rainfall and Weather Advisories
-    {
-      source: 'PAGASA',
-      title: 'Rainfall Advisory No. 2 - Visayas',
-      description: 'Light to moderate to at times heavy rains affecting portions of Visayas, with possible flooding in low-lying areas.',
-      category: 'rainfall',
-      region: 'Eastern and Central Visayas',
-      published_at: new Date('2025-05-28T05:00:00+08:00'),
-      link: 'https://www.pagasa.dost.gov.ph/regional-forecast/visprsd',
-      severity: 'medium',
-    },
-    {
-      source: 'PAGASA',
-      title: 'Rainfall Advisory No. 4 - Southern Luzon',
-      description: 'Rainfall has weakened; this is the final advisory for Southern Luzon regarding today\'s system.',
-      category: 'rainfall',
-      region: 'Southern Luzon',
-      published_at: new Date('2025-05-28T14:00:00+08:00'),
-      link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/southern-luzon',
-      severity: 'medium', // Changed from low
-    },
-    {
-      source: 'PAGASA',
-      title: 'Weekly Weather Outlook',
-      description: 'Scattered rains over Mindanao and parts of Visayas due to the Intertropical Convergence Zone (ITCZ).',
-      category: 'weather',
-      region: 'Nationwide',
-      published_at: new Date('2025-05-23T00:00:00+08:00'),
-      link: 'https://bagong.pagasa.dost.gov.ph/weather/weather-outlook-weekly',
-      severity: 'medium',
-    },
-    {
-      source: 'PAGASA',
-      title: 'Daily Rainfall and Temperature Report',
-      description: 'Temperature and rainfall levels within normal range. No extreme anomalies recorded.',
-      category: 'weather', // Changed from climate
-      region: 'Nationwide',
-      published_at: new Date('2025-05-27T08:00:00+08:00'),
-      link: 'https://www.pagasa.dost.gov.ph/climate/climate-monitoring',
-      severity: 'medium', // Changed from low
-    },
-    {
-      source: 'PAGASA',
-      title: 'Seasonal Climate Outlook',
-      description: 'Near-normal to above-normal rainfall conditions expected from June to August in most parts of the country.',
-      category: 'weather', // Changed from climate
-      region: 'Nationwide',
-      published_at: new Date('2025-05-29T00:00:00+08:00'),
-      link: 'https://bagong.pagasa.dost.gov.ph/climate/climate-prediction/seasonal-forecast',
-      severity: 'medium',
-    },
-    {
-      source: 'PAGASA',
-      title: 'Thunderstorm Advisory No. 19 - NCR',
-      description: 'Moderate to heavy rainshowers with lightning and strong winds expected over Metro Manila and nearby provinces.',
-      category: 'rainfall',
-      region: 'Metro Manila',
-      published_at: new Date('2025-05-28T02:00:00+08:00'),
-      link: 'https://www.pagasa.dost.gov.ph/regional-forecast/ncrprsd',
-      severity: 'medium',
-    },
-    {
-      source: 'PAGASA',
-      title: 'Weather Advisory No. 4 - ITCZ',
-      description: 'Heavy rainfall outlook due to ITCZ, with potential impacts including widespread flooding and landslides.',
-      category: 'weather',
-      region: 'Nationwide',
-      published_at: new Date('2025-05-23T05:00:00+08:00'),
-      link: 'https://pubfiles.pagasa.dost.gov.ph/tamss/weather/advisory.pdf',
-      severity: 'high',
-    },
-    
-    // Typhoon and Cyclone Advisories
-    {
-      source: 'PAGASA',
-      title: 'Tropical Cyclone Threat Potential',
-      description: 'No tropical cyclone-like vortex present inside the PAR; low chance of development in the coming week.',
-      category: 'typhoon',
-      region: 'Nationwide',
-      published_at: new Date('2025-05-30T00:00:00+08:00'),
-      link: 'https://pubfiles.pagasa.dost.gov.ph/pagasaweb/files/climate/tcthreat/TC_Threat_and_S2S_Forecast.pdf',
-      severity: 'medium', // Changed from low
-    },
-    
-    // Flood Advisories
-    {
-      source: 'PAGASA',
-      title: 'Flood Advisory - Dam Water Level Update',
-      description: 'Monitoring of reservoir water levels in major dams; some deviations from normal high water levels observed.',
-      category: 'flood',
-      region: 'Nationwide',
-      published_at: new Date('2025-05-28T08:00:00+08:00'),
-      link: 'https://www.pagasa.dost.gov.ph/flood',
-      severity: 'medium',
-    },
-    
-    // Earthquake Advisories
-    {
-      source: 'PHIVOLCS',
-      title: 'Earthquake Information No. 1',
-      description: 'Magnitude 2.4 tectonic earthquake recorded 60 km southeast of Jose Abad Santos, Davao Occidental.',
-      category: 'earthquake',
-      region: 'Davao Region',
-      published_at: new Date('2025-05-25T13:21:00+08:00'),
-      link: 'https://earthquake.phivolcs.dost.gov.ph/2025_Earthquake_Information/May/2025_0525_0521_B1.html',
-      severity: 'medium', // Changed from low
-    },
-    
-    // Landslide Advisories
-    {
-      source: 'PAGASA',
-      title: 'Northern Luzon Regional Forecast',
-      description: 'Residents along mountain slopes advised of possible landslides, mudslides, rockslides, and flash floods.',
-      category: 'landslide',
-      region: 'Northern Luzon',
-      published_at: new Date('2025-05-30T05:00:00+08:00'),
-      link: 'https://bagong.pagasa.dost.gov.ph/regional-forecast/nlprsd',
-      severity: 'medium',
-    },
-    
-    // General Weather Forecasts
-    {
-      source: 'PAGASA',
-      title: 'Extended Weather Outlook for Selected Cities',
-      description: 'Forecast for selected Philippine cities indicating generally fair weather with isolated rain showers.',
-      category: 'weather',
-      region: 'Nationwide',
-      published_at: new Date('2025-05-30T00:00:00+08:00'),
-      link: 'https://www.pagasa.dost.gov.ph/weather/weather-outlook-selected-philippine-cities',
-      severity: 'medium', // Changed from low
-    }
-  ];
-}
-
 // Function to log scraper status to Supabase
 async function logScraperStatus(status, message) {
   try {
@@ -911,34 +737,20 @@ async function runScraper() {
     
     let alerts = [];
     
-    // Check if we should use sample alerts (config override)
-    if (config.useSampleAlerts) {
-      await logScraperStatus('running', 'Using sample alerts (config override)...');
-      alerts = await getSampleAlerts();
+    // Attempt live scraping
+    await logScraperStatus('running', 'Attempting to scrape PAGASA...');
+    const pagasaAlerts = await scrapePAGASA();
+    
+    await logScraperStatus('running', 'Attempting to scrape PHIVOLCS...');
+    const phivolcsAlerts = await scrapePHIVOLCS();
+    
+    // Combine alerts from live scraping
+    alerts = [...pagasaAlerts, ...phivolcsAlerts];
+    
+    if (alerts.length > 0) {
+      await logScraperStatus('running', `Successfully found ${alerts.length} total alerts from live sources.`);
     } else {
-      // Attempt live scraping
-      await logScraperStatus('running', 'Attempting to scrape PAGASA...');
-      const pagasaAlerts = await scrapePAGASA();
-      
-      await logScraperStatus('running', 'Attempting to scrape PHIVOLCS...');
-      const phivolcsAlerts = await scrapePHIVOLCS();
-      
-      // Combine alerts from live scraping
-      let liveAlerts = [...pagasaAlerts, ...phivolcsAlerts];
-      
-      if (liveAlerts.length > 0) {
-        alerts = liveAlerts;
-        await logScraperStatus('running', `Successfully found ${alerts.length} total alerts from live sources.`);
-      } else {
-        await logScraperStatus('running', 'Live scraping yielded 0 alerts. Falling back to sample alerts.'); // Changed 'warning' to 'running'
-        alerts = await getSampleAlerts();
-        if (alerts.length > 0) {
-          await logScraperStatus('running', `Using ${alerts.length} sample alerts as fallback.`);
-        } else {
-          // This case means both live and sample alerts are empty.
-          await logScraperStatus('error', 'Fallback to sample alerts also yielded 0 alerts. No data will be stored.'); // Changed 'warning' to 'error'
-        }
-      }
+      await logScraperStatus('running', 'Live scraping yielded 0 alerts. No data will be stored.');
     }
     
     // Store alerts in Supabase (only if alerts exist)
@@ -947,7 +759,7 @@ async function runScraper() {
       await storeAlerts(alerts);
       await logScraperStatus('completed', 'Scraper completed. Alerts processed and stored.');
     } else {
-      await logScraperStatus('completed', 'Scraper completed. No alerts (live or sample) found to store.');
+      await logScraperStatus('completed', 'Scraper completed. No alerts found to store.');
     }
     
   } catch (error) {
