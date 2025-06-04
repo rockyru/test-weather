@@ -7,11 +7,11 @@ module.exports = {
   
   // For the scraper, use the service role key instead of anon key
   // This will be provided through environment variables when running in GitHub Actions
-  supabaseKey: process.env.SUPABASE_KEY || 'YOUR_SERVICE_ROLE_KEY_HERE', // Will be replaced by the GitHub Actions secret
+  supabaseKey: process.env.SUPABASE_KEY || 'your-service-role-key', // Must be set in environment variables
   
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
   useSampleAlerts: false, // Actually scrape websites instead of using sample data
-  openweathermapApiKey: process.env.OPENWEATHERMAP_API_KEY || '857a0747fc5b2aa707a97ab161d128e6', // Load from .env or use fallback
+  openweathermapApiKey: process.env.OPENWEATHERMAP_API_KEY || 'your-api-key', // Must be set in environment variables
   sources: {
     pagasa: 'https://www.pagasa.dost.gov.ph/', // For PAGASA specific bulletins (typhoons, floods)
     phivolcs: 'https://www.phivolcs.dost.gov.ph/', // For PHIVOLCS specific bulletins (volcanoes)

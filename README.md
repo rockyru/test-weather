@@ -85,7 +85,16 @@ npm install
 ```
 REACT_APP_SUPABASE_URL=your_supabase_url
 REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+OPENWEATHERMAP_API_KEY=your_openweathermap_api_key
 ```
+
+   For the scraper service, you'll also need to add:
+
+```
+SUPABASE_KEY=your_supabase_service_role_key
+```
+
+   **IMPORTANT:** Never commit your `.env` file or expose API keys in your code. The `.env` file is already in `.gitignore` to prevent accidental commits. For production deployments, set these as environment variables in your hosting platform.
 
 5. **Start the development server**
 
