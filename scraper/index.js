@@ -861,17 +861,17 @@ async function logScraperStatus(status, message) {
 // Function to delete old scraper logs
 async function deleteOldScraperLogs() {
   try {
-    // Calculate timestamp for 12 hours ago
-    const twelveHoursAgo = new Date();
-    twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
+    // Calculate timestamp for 6 hours ago
+    const sixHoursAgo = new Date();
+    sixHoursAgo.setHours(sixHoursAgo.getHours() - 6);
     
-    console.log(`Deleting scraper logs older than: ${twelveHoursAgo.toISOString()}`);
+    console.log(`Deleting scraper logs older than: ${sixHoursAgo.toISOString()}`);
     
     // First count the records to be deleted
     const { data: logsToDelete, error: countError } = await supabase
       .from('scraper_logs')
       .select('id')
-      .lt('timestamp', twelveHoursAgo.toISOString());
+      .lt('timestamp', sixHoursAgo.toISOString());
     
     if (countError) {
       console.error('Error counting old scraper logs:', countError);
@@ -884,12 +884,12 @@ async function deleteOldScraperLogs() {
     const { error: deleteError } = await supabase
       .from('scraper_logs')
       .delete()
-      .lt('timestamp', twelveHoursAgo.toISOString());
+      .lt('timestamp', sixHoursAgo.toISOString());
     
     if (deleteError) {
       console.error('Error deleting old scraper logs:', deleteError);
     } else {
-      console.log(`Successfully deleted ${countToDelete} scraper logs older than 12 hours`);
+      console.log(`Successfully deleted ${countToDelete} scraper logs older than 6 hours`);
     }
   } catch (error) {
     console.error('Unexpected error deleting old scraper logs:', error);
