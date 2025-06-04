@@ -22,4 +22,5 @@ export type DisasterAlertFilter = {
   category?: string;
   region?: string;
   severity?: string;
+  source?: string; // Added source filter
 };

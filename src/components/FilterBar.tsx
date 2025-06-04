@@ -19,6 +19,19 @@ const categories = [
   { value: 'weather', label: 'Weather' },
 ];
 
+const dataSources = [
+  { value: '', label: 'All Sources' },
+  { value: 'PAGASA', label: 'PAGASA' },
+  { value: 'PHIVOLCS', label: 'PHIVOLCS' },
+  { value: 'USGS API', label: 'USGS API' },
+  { value: 'OpenWeatherMap API', label: 'OpenWeatherMap API' },
+  // System sources could be added if needed, e.g.:
+  // { value: 'PAGASA System', label: 'PAGASA System Alerts' },
+  // { value: 'PHIVOLCS System', label: 'PHIVOLCS System Alerts' },
+  // { value: 'USGS API System', label: 'USGS System Alerts' },
+  // { value: 'OpenWeatherMap System', label: 'OpenWeatherMap System Alerts' },
+];
+
 const severityLevels = [
   { value: '', label: 'All Risk Levels' },
   { value: 'high', label: 'High Risk' },
@@ -51,6 +64,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions,
     onFilterChange({ ...filters, severity: e.target.value });
   };
 
+  const handleSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange({ ...filters, source: e.target.value });
+  };
+
   const handleClearFilters = () => {
     onFilterChange({});
     setSearchQuery('');
@@ -61,7 +78,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions,
     setShowFilters(!showFilters);
   };
 
-  const hasActiveFilters = !!filters.category || !!filters.region || !!filters.severity || !!searchQuery;
+  const hasActiveFilters = !!filters.category || !!filters.region || !!filters.severity || !!filters.source || !!searchQuery;
 
   return (
     <div className="filter-bar">
@@ -196,6 +213,29 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions,
             ))}
           </select>
         </div>
+
+        <div className="filter-group">
+          <label className="filter-label" htmlFor="source-filter">
+            <svg className="filter-label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              {/* Simple icon for source - could be improved */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 012-2m14 0V9a2 2 0 00-2-2H5a2 2 0 00-2 2v2m14 0h1m-1 0h-1" />
+            </svg>
+            Source
+          </label>
+          <select
+            id="source-filter"
+            className="filter-select"
+            value={filters.source || ''}
+            onChange={handleSourceChange}
+            aria-label="Filter by source"
+          >
+            {dataSources.map((source) => (
+              <option key={source.value} value={source.value}>
+                {source.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       
       {hasActiveFilters && (
@@ -233,6 +273,18 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, regions,
                   onClick={() => onFilterChange({ ...filters, severity: '' })} 
                   className="remove-filter"
                   aria-label="Remove severity filter"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {filters.source && (
+              <span className="active-filter-tag">
+                Source: {dataSources.find(s => s.value === filters.source)?.label}
+                <button
+                  onClick={() => onFilterChange({ ...filters, source: '' })}
+                  className="remove-filter"
+                  aria-label="Remove source filter"
                 >
                   ×
                 </button>

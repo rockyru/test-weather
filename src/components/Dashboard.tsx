@@ -30,6 +30,7 @@ const Dashboard: React.FC = () => {
     const regionParam = urlParams.get('region');
     const severityParam = urlParams.get('severity');
     const searchParam = urlParams.get('search');
+    const sourceParam = urlParams.get('source'); // Added source param
 
     // Set the page from URL if present
     if (pageParam) {
@@ -44,6 +45,7 @@ const Dashboard: React.FC = () => {
     if (categoryParam) newFilters.category = categoryParam;
     if (regionParam) newFilters.region = regionParam;
     if (severityParam) newFilters.severity = severityParam;
+    if (sourceParam) newFilters.source = sourceParam; // Added source filter from URL
     if (Object.keys(newFilters).length > 0) {
       setFilters(newFilters);
     }
@@ -140,6 +142,12 @@ const Dashboard: React.FC = () => {
       result = result.filter(alert => alert.severity === filters.severity);
       console.log('After severity filter:', result.length);
     }
+
+    // Apply source filter
+    if (filters.source) {
+      result = result.filter(alert => alert.source === filters.source);
+      console.log('After source filter:', result.length);
+    }
     
     // Apply search query if provided
     if (searchQuery.trim()) {
@@ -225,6 +233,7 @@ const Dashboard: React.FC = () => {
     if (filters.category) urlParams.set('category', filters.category);
     if (filters.region) urlParams.set('region', filters.region);
     if (filters.severity) urlParams.set('severity', filters.severity);
+    if (filters.source) urlParams.set('source', filters.source); // Added source to URL params
     if (searchQuery) urlParams.set('search', searchQuery);
     
     // Update URL with page parameter
@@ -246,23 +255,37 @@ const Dashboard: React.FC = () => {
           setCurrentPage(event.state.page);
         }
         if (event.state.filters) {
-          setFilters(event.state.filters);
+          setFilters(event.state.filters); // This should now include source if it was in the state
         }
         if (event.state.searchQuery !== undefined) {
           setSearchQuery(event.state.searchQuery);
         }
       } else {
-        // If no state, parse from URL
+        // If no state, parse from URL (including source)
         const urlParams = new URLSearchParams(window.location.search);
         const pageParam = urlParams.get('page');
+        const categoryParam = urlParams.get('category');
+        const regionParam = urlParams.get('region');
+        const severityParam = urlParams.get('severity');
+        const searchParam = urlParams.get('search');
+        const sourceParam = urlParams.get('source');
+
         if (pageParam) {
           const parsedPage = parseInt(pageParam, 10);
-          if (!isNaN(parsedPage) && parsedPage > 0) {
-            setCurrentPage(parsedPage);
-          }
+          if (!isNaN(parsedPage) && parsedPage > 0) setCurrentPage(parsedPage);
+          else setCurrentPage(1);
         } else {
           setCurrentPage(1);
         }
+        const newFilters: DisasterAlertFilter = {};
+        if (categoryParam) newFilters.category = categoryParam;
+        if (regionParam) newFilters.region = regionParam;
+        if (severityParam) newFilters.severity = severityParam;
+        if (sourceParam) newFilters.source = sourceParam;
+        setFilters(newFilters);
+
+        if (searchParam) setSearchQuery(searchParam);
+        else setSearchQuery('');
       }
     };
 
