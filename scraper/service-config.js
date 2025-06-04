@@ -11,7 +11,7 @@ module.exports = {
   
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
   useSampleAlerts: false, // Actually scrape websites instead of using sample data
-  openweathermapApiKey: '857a0747fc5b2aa707a97ab161d128e6', // Added OpenWeatherMap API Key
+  openweathermapApiKey: process.env.OPENWEATHERMAP_API_KEY || '857a0747fc5b2aa707a97ab161d128e6', // Load from .env or use fallback
   sources: {
     pagasa: 'https://www.pagasa.dost.gov.ph/', // For PAGASA specific bulletins (typhoons, floods)
     phivolcs: 'https://www.phivolcs.dost.gov.ph/', // For PHIVOLCS specific bulletins (volcanoes)

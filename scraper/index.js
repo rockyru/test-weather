@@ -133,8 +133,8 @@ async function scrapePAGASA() {
       const link = $(el).find('a').attr('href');
       const publishedAt = new Date();
       
-      if (!description || description.length < 15) {
-        console.log(`Skipping PAGASA forecast with insufficient information: ${title}`);
+      if (!description || description.length < 10) { // Relaxed condition for description length
+        console.log(`Skipping PAGASA forecast with insufficient information (desc length < 10): ${title}`);
         return;
       }
       
