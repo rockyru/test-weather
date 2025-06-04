@@ -17,10 +17,42 @@ const Dashboard: React.FC = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const alertsPerPage = 10;
+  const alertsPerPage = 20;
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Parse URL parameters on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+    const categoryParam = urlParams.get('category');
+    const regionParam = urlParams.get('region');
+    const severityParam = urlParams.get('severity');
+    const searchParam = urlParams.get('search');
+
+    // Set the page from URL if present
+    if (pageParam) {
+      const parsedPage = parseInt(pageParam, 10);
+      if (!isNaN(parsedPage) && parsedPage > 0) {
+        setCurrentPage(parsedPage);
+      }
+    }
+
+    // Set filters from URL if present
+    const newFilters: DisasterAlertFilter = {};
+    if (categoryParam) newFilters.category = categoryParam;
+    if (regionParam) newFilters.region = regionParam;
+    if (severityParam) newFilters.severity = severityParam;
+    if (Object.keys(newFilters).length > 0) {
+      setFilters(newFilters);
+    }
+
+    // Set search query if present
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, []);
 
   // Fetch alerts from Supabase
   useEffect(() => {
@@ -29,16 +61,16 @@ const Dashboard: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // Calculate date 7 days ago for filtering
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        // Calculate date 30 days ago for filtering (increased from 7 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         
-        console.log('Fetching alerts from:', sevenDaysAgo.toISOString());
+        console.log('Fetching alerts from:', thirtyDaysAgo.toISOString());
 
         const { data, error } = await supabase
           .from('disaster_alerts')
           .select('*')
-          .gte('published_at', sevenDaysAgo.toISOString())
+          .gte('published_at', thirtyDaysAgo.toISOString())
           .order('published_at', { ascending: false });
 
         if (error) {
@@ -46,6 +78,7 @@ const Dashboard: React.FC = () => {
         }
 
         if (data) {
+          console.log('Fetched alerts count:', data.length);
           setAlerts(data as DisasterAlert[]);
           
           // Extract unique regions for filter dropdown
@@ -88,20 +121,24 @@ const Dashboard: React.FC = () => {
   // Apply filters and search to alerts
   useEffect(() => {
     let result = [...alerts];
+    console.log('Filter Debug - Total alerts:', alerts.length);
 
     // Apply category filter
     if (filters.category) {
       result = result.filter(alert => alert.category === filters.category);
+      console.log('After category filter:', result.length);
     }
 
     // Apply region filter
     if (filters.region) {
       result = result.filter(alert => alert.region === filters.region);
+      console.log('After region filter:', result.length);
     }
 
     // Apply severity filter
     if (filters.severity) {
       result = result.filter(alert => alert.severity === filters.severity);
+      console.log('After severity filter:', result.length);
     }
     
     // Apply search query if provided
@@ -112,16 +149,21 @@ const Dashboard: React.FC = () => {
         (alert.description && alert.description.toLowerCase().includes(query)) ||
         (alert.region && alert.region.toLowerCase().includes(query))
       );
+      console.log('After search filter:', result.length);
     }
 
     // Update filtered alerts
     setFilteredAlerts(result);
+    console.log('Updated filtered alerts:', result.length);
     
-    // Calculate total pages
-    setTotalPages(Math.ceil(result.length / alertsPerPage));
+    // Don't reset to first page when component initially mounts or when no filters are active
+    const isFilter = Object.keys(filters).length > 0 || searchQuery.trim() !== '';
     
-    // Reset to first page when filters change
-    setCurrentPage(1);
+    // Only reset to page 1 when explicitly applying a filter, not on initial load
+    if (isFilter) {
+      console.log('Resetting to page 1 due to filter change');
+      setCurrentPage(1);
+    }
   }, [alerts, filters, searchQuery]);
   
   // Handle pagination
@@ -130,9 +172,29 @@ const Dashboard: React.FC = () => {
     const startIndex = (currentPage - 1) * alertsPerPage;
     const endIndex = startIndex + alertsPerPage;
     
+    // Debug logging for pagination
+    console.log('Pagination Debug:', { 
+      currentPage, 
+      totalPages, 
+      alertsPerPage,
+      filteredAlertsLength: filteredAlerts.length,
+      startIndex,
+      endIndex,
+      displayedAlertsCount: filteredAlerts.slice(startIndex, endIndex).length
+    });
+    
     // Get current page of alerts
     setDisplayedAlerts(filteredAlerts.slice(startIndex, endIndex));
-  }, [filteredAlerts, currentPage]);
+    
+    // Update total pages calculation whenever filtered alerts change
+    const calculatedTotalPages = Math.max(1, Math.ceil(filteredAlerts.length / alertsPerPage));
+    setTotalPages(calculatedTotalPages);
+    
+    // If current page is greater than total pages, adjust to the last available page
+    if (currentPage > calculatedTotalPages && calculatedTotalPages > 0) {
+      setCurrentPage(calculatedTotalPages);
+    }
+  }, [filteredAlerts, currentPage, alertsPerPage]);
 
   const handleFilterChange = (newFilters: DisasterAlertFilter) => {
     setFilters(newFilters);
@@ -143,20 +205,72 @@ const Dashboard: React.FC = () => {
   };
   
   const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) {
+      console.log('Invalid page change rejected:', { requestedPage: page, totalPages, currentPage });
+      return;
+    }
+    
+    console.log('Changing page from', currentPage, 'to', page);
     setCurrentPage(page);
+    
     // Scroll to top when page changes
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     });
     
-    // Update URL with page parameter to make navigation feel like page refresh
+    // Build URL query params
+    const urlParams = new URLSearchParams();
+    urlParams.set('page', page.toString());
+    if (filters.category) urlParams.set('category', filters.category);
+    if (filters.region) urlParams.set('region', filters.region);
+    if (filters.severity) urlParams.set('severity', filters.severity);
+    if (searchQuery) urlParams.set('search', searchQuery);
+    
+    // Update URL with page parameter
+    const url = `?${urlParams.toString()}`;
+    console.log('Updating URL to:', url);
     window.history.pushState(
-      { page }, 
+      { page, filters, searchQuery }, 
       '', 
-      `?page=${page}${filters.category ? `&category=${filters.category}` : ''}${filters.region ? `&region=${filters.region}` : ''}${filters.severity ? `&severity=${filters.severity}` : ''}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`
+      url
     );
   };
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state) {
+        // Restore page state from history
+        if (event.state.page) {
+          setCurrentPage(event.state.page);
+        }
+        if (event.state.filters) {
+          setFilters(event.state.filters);
+        }
+        if (event.state.searchQuery !== undefined) {
+          setSearchQuery(event.state.searchQuery);
+        }
+      } else {
+        // If no state, parse from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageParam = urlParams.get('page');
+        if (pageParam) {
+          const parsedPage = parseInt(pageParam, 10);
+          if (!isNaN(parsedPage) && parsedPage > 0) {
+            setCurrentPage(parsedPage);
+          }
+        } else {
+          setCurrentPage(1);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   return (
     <div className="container">
