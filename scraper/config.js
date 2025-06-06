@@ -8,7 +8,7 @@ const USE_SAMPLE_ALERTS = true;
 module.exports = {
   // Use sample alerts flag to bypass scraping and RLS issues
   useSampleAlerts: USE_SAMPLE_ALERTS,
-  supabaseUrl: process.env.REACT_APP_SUPABASE_URL || 'your-supabase-url',
+  supabaseUrl: process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL || 'https://lgqfdbygspzkcrvybcwc.supabase.co',
   supabaseKey: process.env.REACT_APP_SUPABASE_ANON_KEY || 'your-anon-key', // Load from environment variables
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
   openweathermapApiKey: process.env.OPENWEATHERMAP_API_KEY || 'your-api-key',
