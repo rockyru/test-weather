@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const config = require('./config');
+const { scrapePAGASA } = require('.');
 
 // Function to analyze website structure and find relevant alert elements
 async function analyzeWebsite(url, websiteName) {
@@ -173,61 +174,6 @@ function extractRegionFromText(text) {
   return 'Nationwide';
 }
 
-// Main test function
-async function testScraper() {
-  console.log('Starting scraper test...');
-  
-  // 1. Analyze websites to find potential alert elements
-  const pagasaElements = await analyzeWebsite(config.sources.pagasa, 'PAGASA');
-  const phivolcsElements = await analyzeWebsite(config.sources.phivolcs, 'PHIVOLCS');
-  
-  // 2. Create selectors based on analysis
-  const pagasaSelectors = pagasaElements.map(el => 
-    `${el.type}${el.id ? '#'+el.id : ''}${el.classes ? '.'+el.classes.replace(/\s+/g, '.') : ''}`
-  ).filter(selector => selector !== 'div');
-  
-  const phivolcsSelectors = phivolcsElements.map(el => 
-    `${el.type}${el.id ? '#'+el.id : ''}${el.classes ? '.'+el.classes.replace(/\s+/g, '.') : ''}`
-  ).filter(selector => selector !== 'div');
-  
-  console.log('\n----- GENERATED SELECTORS -----');
-  console.log('PAGASA Selectors:', pagasaSelectors);
-  console.log('PHIVOLCS Selectors:', phivolcsSelectors);
-  
-  // 3. Try to extract alerts using the selectors
-  const pagasaAlerts = await extractAlerts(config.sources.pagasa, 'PAGASA', pagasaSelectors);
-  const phivolcsAlerts = await extractAlerts(config.sources.phivolcs, 'PHIVOLCS', phivolcsSelectors);
-  
-  // 4. Output combined results
-  const allAlerts = [...pagasaAlerts, ...phivolcsAlerts];
-  console.log('\n----- EXTRACTION RESULTS -----');
-  console.log(`Total alerts found: ${allAlerts.length}`);
-  console.log('Alert samples:');
-  allAlerts.slice(0, 3).forEach((alert, i) => {
-    console.log(`\n[${i+1}] ${alert.title}`);
-    console.log(`    Source: ${alert.source}`);
-    console.log(`    Category: ${alert.category}`);
-    console.log(`    Severity: ${alert.severity}`);
-    console.log(`    Region: ${alert.region}`);
-    console.log(`    Description: ${alert.description.substring(0, 100)}...`);
-  });
-  
-  console.log('\n----- RECOMMENDED SELECTORS -----');
-  console.log('Based on the analysis, use these CSS selectors in your main scraper:');
-  
-  if (pagasaSelectors.length > 0) {
-    console.log('\nFor PAGASA:');
-    pagasaSelectors.slice(0, 5).forEach(selector => console.log(`- ${selector}`));
-  }
-  
-  if (phivolcsSelectors.length > 0) {
-    console.log('\nFor PHIVOLCS:');
-    phivolcsSelectors.slice(0, 5).forEach(selector => console.log(`- ${selector}`));
-  }
-  
-  // Generate sample code to update in the main scraper
-  console.log('\n----- UPDATE YOUR SCRAPER CODE -----');
-  console.log(`Update these functions in your index.js file`);
 
 async function scrapePAGASA() {
   try {
@@ -365,8 +311,13 @@ async function insertTestData() {
 }
 
 // Call this function to populate your database with test data
-await insertTestData();
-}
+// await insertTestData();
+
 
 // Run the test
-testScraper();
+
+// testScraper();
+
+// scrapePHIVOLCS()
+// scrapePAGASA()
+
