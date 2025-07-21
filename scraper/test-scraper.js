@@ -26,7 +26,7 @@ async function analyzeWebsite(url, websiteName) {
     for (const [type, count] of Object.entries(elements)) {
       console.log(`${type}: ${count} found`);
     }
-    
+
     // Scan for common alert-related classes
     console.log('\n----- SCANNING FOR POTENTIAL ALERT ELEMENTS -----');
     
@@ -227,8 +227,7 @@ async function testScraper() {
   
   // Generate sample code to update in the main scraper
   console.log('\n----- UPDATE YOUR SCRAPER CODE -----');
-  console.log(`
-// Update these functions in your index.js file
+  console.log(`Update these functions in your index.js file`);
 
 async function scrapePAGASA() {
   try {
@@ -238,7 +237,7 @@ async function scrapePAGASA() {
     const alerts = [];
 
     // Use these selectors (based on actual website structure)
-    const selectors = ${JSON.stringify(pagasaSelectors.slice(0, 5))};
+    const selectors = JSON.parse(JSON.stringify(pagasaSelectors.slice(0, 5)));
     
     selectors.forEach(selector => {
       $(selector).each((i, el) => {
@@ -275,7 +274,7 @@ async function scrapePHIVOLCS() {
     const alerts = [];
 
     // Use these selectors (based on actual website structure)
-    const selectors = ${JSON.stringify(phivolcsSelectors.slice(0, 5))};
+    const selectors = JSON.parse(JSON.stringify(phivolcsSelectors.slice(0, 5)));
     
     selectors.forEach(selector => {
       $(selector).each((i, el) => {
@@ -304,10 +303,9 @@ async function scrapePHIVOLCS() {
     console.error('Error scraping PHIVOLCS:', error);
     return [];
   }
-}`);
+}
 
-  console.log('\n----- FALLBACK OPTION -----');
-  console.log(`If the scraper still doesn't work, you can use this manual test data insertion function:
+  
 
 async function insertTestData() {
   const testAlerts = [
@@ -367,7 +365,7 @@ async function insertTestData() {
 }
 
 // Call this function to populate your database with test data
-// await insertTestData();`);
+await insertTestData();
 }
 
 // Run the test
