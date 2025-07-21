@@ -11,7 +11,7 @@ module.exports = {
   supabaseUrl: process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL || 'your-supabase-url', // Must be set in environment variables
   supabaseKey: process.env.REACT_APP_SUPABASE_ANON_KEY, // Load from environment variables
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
-  openweathermapApiKey: process.env.OPENWEATHERMAP_API_KEY || 'your-api-key',
+  openweathermapApiKey: process.env.OPENWEATHERMAP_API_KEY,
   sources: {
     pagasa: 'https://www.pagasa.dost.gov.ph/', // For PAGASA specific bulletins (typhoons, floods)
     phivolcs: 'https://www.phivolcs.dost.gov.ph/', // For PHIVOLCS specific bulletins (volcanoes)
