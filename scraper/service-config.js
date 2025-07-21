@@ -3,11 +3,11 @@
 require('dotenv').config({ path: '../.env' });
 
 module.exports = {
-  supabaseUrl: process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL || 'https://evslaslqmaimiaxrapbr.supabase.co',
+  supabaseUrl: process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL || 'your-supabase-url', // Must be set in environment variables
   
   // For the scraper, use the service role key instead of anon key
   // This will be provided through environment variables when running in GitHub Actions
-  supabaseKey: process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV2c2xhc2xxbWFpbWlheHJhcGJyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzEwNjgwMCwiZXhwIjoyMDY4NjgyODAwfQ.h8tEY8ktW0iOymF6izAS-cdkUDA0J5KpNcgnOqVR7j8', // Must be set in environment variables
+  supabaseKey: process.env.SUPABASE_KEY || 'your-service-role-key', // Must be set in environment variables
   
   scrapingInterval: 15 * 60 * 1000, // 15 minutes in milliseconds
   useSampleAlerts: false, // Actually scrape websites instead of using sample data
